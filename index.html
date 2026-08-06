@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WINNERS & ODDS</title>
+    <style>
+        /* --- クラシック競馬新聞テーマカラー --- */
+        :root {
+            --color-paper-cream: #F5EFEB;
+            --color-paper-tan: #E6DCD3;
+            --color-ink-black: #1A1A1A;
+            --color-accent-red: #C82323;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Georgia', 'Times New Roman', 'Shippori Mincho', serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--color-paper-cream);
+            color: var(--color-ink-black);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- 画面全体のコンテナ（スマホ最適化） --- */
+        .app-container {
+            width: 100%;
+            max-width: 450px;
+            min-height: 100vh;
+            background-color: var(--color-paper-cream);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid var(--color-ink-black);
+            border-right: 1px solid var(--color-ink-black);
+            padding: 20px;
+        }
+
+        .screen {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            flex-grow: 1;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* --- 共通コンポーネント: ヘッダー --- */
+        .winners-odds-header {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .winners-odds-header h1 {
+            font-size: 26px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: var(--color-ink-black);
+        }
+
+        .divider-thick {
+            border: none;
+            height: 3px;
+            background-color: var(--color-ink-black);
+            margin-top: 2px;
+        }
+
+        .divider-thin {
+            border: none;
+            height: 1px;
+            background-color: var(--color-ink-black);
+            margin: 12px 0;
+        }
+
+        h2 {
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 4px;
+        }
+
+        h3 {
+            font-size: 13px;
+            font-weight: bold;
+            margin: 14px 0 6px 0;
+        }
+
+        /* --- ボタン共通 --- */
+        .btn-dark {
+            background-color: var(--color-ink-black);
+            color: var(--color-paper-cream);
+            border: none;
+            height: 52px;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--color-ink-black);
+            border: 1px solid var(--color-ink-black);
+            height: 44px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-text-accent {
+            background: transparent;
+            color: var(--color-accent-red);
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        /* --- 1. 設定画面用スタイル --- */
+        .settings-row {
+            margin-bottom: 16px;
+        }
+
+        .settings-row label {
+            display: block;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .radio-group {
+            display: flex;
+            border: 1px solid var(--color-ink-black);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .radio-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .radio-item input {
+            display: none;
+        }
+
+        .radio-item label {
+            display: block;
+            padding: 10px 0;
+            font-size: 13px;
+            background-color: var(--color-paper-cream);
+            color: var(--color-ink-black);
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .radio-item input:checked + label {
+            background-color: var(--color-ink-black);
+            color: var(--color-paper-cream);
+        }
+
+        .select-input, .text-input {
+            width: 100%;
+            height: 44px;
+            border: 1px solid var(--color-ink-black);
+            border-radius: 4px;
+            background-color: var(--color-paper-cream);
+            padding: 0 10px;
+            font-size: 14px;
+            color: var(--color-ink-black);
+        }
+
+        /* --- 2. プレイヤー登録用スタイル --- */
+        .player-input-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .player-list {
+            border: 1px solid var(--color-ink-black);
+            border-radius: 4px;
+            background-color: var(--color-paper-tan);
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+        }
+
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 13px;
+            border-bottom: 0.5px solid rgba(26,26,26,0.2);
+        }
+
+        .player-item:last-child {
+            border-bottom: none;
+        }
+
+        /* --- 3. 馬番割当用スタイル --- */
+        .assignment-box {
+            border: 1px solid var(--color-ink-black);
+            border-radius: 4px;
+            background-color: rgba(230, 220, 211, 0.85);
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        .assignment-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .num-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            border: 1px solid var(--color-ink-black);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 900;
+            margin-right: 12px;
+        }
+
+        /* --- 4. スクラッチ画面用スタイル（★背景画像対応） --- */
+        #screen-race {
+            position: relative;
+        }
+
+        /* 背景画像レイヤー (KotlinのImage/alpha=0.22fを完全再現) */
+        .race-bg-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('winners_odds_bg.jpg');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.22;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .race-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            flex-grow: 1;
+        }
+
+        .race-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(26, 26, 26, 0.92);
+            color: var(--color-paper-cream);
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 4px;
+            margin-bottom: 6px;
+        }
+
+        .action-row-buttons {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .btn-mini {
+            flex: 1;
+            height: 36px;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--color-paper-cream);
+            cursor: pointer;
+        }
+
+        .btn-mini.dark { background-color: rgba(26, 26, 26, 0.75); }
+        .btn-mini.accent { background-color: rgba(200, 35, 35, 0.85); }
+
+        .preview-bar {
+            display: flex;
+            justify-content: space-evenly;
+            background-color: rgba(245, 239, 235, 0.9);
+            border: 1px solid var(--color-ink-black);
+            border-radius: 4px;
+            padding: 6px;
+            margin-bottom: 8px;
+        }
+
+        .preview-chip {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .preview-chip .mini-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            border: 1px solid var(--color-ink-black);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .preview-chip span {
+            font-size: 9px;
+            margin-top: 2px;
+        }
+
+        .scratch-card-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .scratch-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .cells-wrapper {
+            width: 100%;
+            border: 1px solid var(--color-ink-black);
+            border-radius: 4px;
+            background-color: rgba(245, 239, 235, 0.85);
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        /* スクラッチセルアウター */
+        .scratch-cell-box {
+            position: relative;
+            width: 100%;
+            height: 48px;
+            border: 1.5px solid var(--color-ink-black);
+            background-color: var(--color-paper-cream);
+            overflow: hidden;
+        }
+
+        .scratch-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            cursor: crosshair;
+        }
+
+        /* --- 5. 結果画面用スタイル --- */
+        .summary-box {
+            border: 1px solid var(--color-ink-black);
+            border-radius: 4px;
+            background-color: var(--color-paper-tan);
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .accent-text { color: var(--color-accent-red); }
+
+        .result-table {
+            width: 100%;
+            margin-bottom: 16px;
+        }
+
+        .result-table-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 12px;
+            border-bottom: 0.5px solid rgba(26,26,26,0.3);
+        }
+
+        .result-table-row.header {
+            font-weight: bold;
+            border-bottom: 1px solid var(--color-ink-black);
+        }
+
+        .result-table-row.highlight {
+            background-color: var(--color-paper-tan);
+            font-weight: bold;
+            color: var(--color-accent-red);
+        }
+
+        .col-1 { flex: 1.5; display: flex; align-items: center; gap: 4px; }
+        .col-2 { flex: 2; }
+        .col-3 { flex: 1.5; text-align: right; }
+        .col-4 { flex: 1.5; text-align: right; }
+
+        .circle-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 0.5px solid var(--color-ink-black);
+            display: inline-block;
+        }
+
+        /* スクラッチ専用統計用グリッド */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .stats-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 10px;
+        }
+
+        .stats-item .val {
+            font-size: 12px;
+            font-weight: 900;
+            color: var(--color-accent-red);
+        }
+
+        /* --- 6. 色設定画面用スタイル --- */
+        .flex-flow-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .circle-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid var(--color-ink-black);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .circle-btn.active {
+            border: 3px solid var(--color-accent-red);
+        }
+
+        .palette-chip {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1.5px solid var(--color-ink-black);
+            cursor: pointer;
+        }
+
+        .custom-picker-section {
+            border: 1px solid var(--color-ink-black);
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .rgb-preview {
+            width: 100%;
+            height: 48px;
+            border-radius: 8px;
+            border: 1px solid var(--color-ink-black);
+            margin-bottom: 8px;
+        }
+
+        .rgb-slider-group {
+            margin-bottom: 8px;
+        }
+
+        .rgb-slider-group label {
+            display: block;
+            font-size: 12px;
+        }
+
+        .rgb-slider-group input {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div id="screen-settings" class="screen active">
+        <div class="winners-odds-header">
+            <h1>WINNERS & ODDS</h1>
+            <div class="divider-thick"></div>
+        </div>
+        <h2>設定画面</h2>
+        <div class="divider-thin"></div>
+
+        <div class="settings-row">
+            <label>ゲームモード</label>
+            <div class="radio-group">
+                <div class="radio-item">
+                    <input type="radio" id="mode-full" name="gameMode" value="FULL" checked>
+                    <label for="mode-full">フルモード</label>
+                </div>
+                <div class="radio-item">
+                    <input type="radio" id="mode-scratch" name="gameMode" value="SCRATCH">
+                    <label for="mode-scratch">スクラッチ専用</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-row">
+            <label>参加人数（分母）</label>
+            <select id="select-player-count" class="select-input">
+                </select>
+        </div>
+
+        <div class="settings-row">
+            <label>1セットあたりの回戦数（枚数）</label>
+            <select id="select-rounds" class="select-input">
+                <option value="3">3</option>
+                <option value="5" selected>5</option>
+                <option value="10">10</option>
+                <option value="12">12</option>
+            </select>
+        </div>
+
+        <div class="settings-row">
+            <label>総セット数</label>
+            <select id="select-sets" class="select-input">
+                <option value="1" selected>1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+            </select>
+        </div>
+
+        <div class="settings-row" id="row-bet-points">
+            <label>賭け点数（フルモード用）</label>
+            <select id="select-bet" class="select-input">
+                <option value="10" selected>10点</option>
+                <option value="20">20点</option>
+                <option value="30">30点</option>
+                <option value="50">50点</option>
+                <option value="100">100点</option>
+            </select>
+        </div>
+
+        <button id="btn-settings-next" class="btn-dark" style="margin-top:auto;">次へ →</button>
+        <button id="btn-go-colors" class="btn-outline" style="margin-top:10px;">番号の色設定へ</button>
+    </div>
+
+    <div id="screen-players" class="screen">
+        <div class="winners-odds-header">
+            <h1>WINNERS & ODDS</h1>
+            <div class="divider-thick"></div>
+        </div>
+        <h2>プレイヤー登録 (<span id="txt-registered-count">0</span>/<span id="txt-required-count">8</span>)</h2>
+        <div class="divider-thin"></div>
+
+        <div class="player-input-row">
+            <input type="text" id="input-player-name" class="text-input" placeholder="プレイヤー名を入力" maxlength="10">
+            <button id="btn-add-player" class="btn-dark" style="width:70px; height:44px;">追加</button>
+        </div>
+
+        <div class="player-list" id="list-players">
+            </div>
+
+        <button id="btn-players-start" class="btn-dark" style="margin-top:auto;">対戦開始！ →</button>
+        <button id="btn-players-back" class="btn-outline" style="margin-top:10px;">← 戻る</button>
+    </div>
+
+    <div id="screen-assignment" class="screen">
+        <div class="winners-odds-header">
+            <h1>WINNERS & ODDS</h1>
+            <div class="divider-thick"></div>
+        </div>
+        <h2>現在の馬番割当</h2>
+        <div class="divider-thin"></div>
+
+        <p style="font-size:12px; font-weight:bold; margin-bottom:8px;" id="txt-assign-round">1セット目 - 1回戦</p>
+
+        <div class="assignment-box" id="box-assignments">
+            </div>
+
+        <button id="btn-assignment-next" class="btn-dark" style="margin-top:auto;">スクラッチ開始 →</button>
+    </div>
+
+    <div id="screen-race" class="screen">
+        <div class="race-bg-image"></div>
+        
+        <div class="race-content">
+            <div class="race-top-bar">
+                <span id="txt-race-progress">1セット目 - 1回戦</span>
+                <div>
+                    <span id="btn-toggle-sound" style="cursor:pointer; margin-right:8px;">🔊</span>
+                    <span id="txt-round-ratio" style="opacity:0.7; font-size:10px;">1/5</span>
+                    <span id="btn-redo-round" style="cursor:pointer; opacity:0.5; margin-left:8px;">↺</span>
+                </div>
+            </div>
+
+            <div class="action-row-buttons">
+                <button id="btn-reveal-winners" class="btn-mini dark">勝者一発</button>
+                <button id="btn-reveal-all" class="btn-mini accent">両方一発</button>
+                <button id="btn-reveal-odds" class="btn-mini dark">配当一発</button>
+            </div>
+
+            <div id="race-assignment-preview" class="preview-bar"></div>
+
+            <div class="scratch-card-container">
+                <div class="scratch-column">
+                    <h3 style="letter-spacing:4px;">勝 者</h3>
+                    <div id="container-winner-cells" class="cells-wrapper"></div>
+                </div>
+                <div class="scratch-column">
+                    <h3 style="letter-spacing:4px;">配 当</h3>
+                    <div id="container-odds-cells" class="cells-wrapper"></div>
+                </div>
+            </div>
+
+            <div style="margin-top:auto; text-align:center; padding-bottom:10px;">
+                <p id="txt-remaining-msg" style="font-size:11px; opacity:0.6; margin-bottom:10px;">残りマスを削ってください</p>
+                <button id="btn-go-result" class="btn-dark" style="display:none;">結果発表 →</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-result" class="screen">
+        <div class="winners-odds-header">
+            <h1>WINNERS & ODDS</h1>
+            <div class="divider-thick"></div>
+        </div>
+        <h2 id="txt-res-title">1セット目 1回戦 結果</h2>
+        <div class="divider-thin"></div>
+
+        <div class="summary-box">
+            <p id="txt-res-bet-info">賭け点数：--点 分母：--</p>
+            <p class="accent-text" id="txt-res-winners">当選番号：--番</p>
+        </div>
+
+        <h3>今回の結果</h3>
+        <div class="result-table" id="table-current-round"></div>
+
+        <div id="wrapper-ranking" style="display:none;">
+            <h3>累計ランキング</h3>
+            <div class="result-table" id="table-cumulative-ranking"></div>
+        </div>
+
+        <div style="margin-top:auto;" id="box-result-action">
+            </div>
+    </div>
+
+    <div id="screen-result-scratch" class="screen">
+        <div class="winners-odds-header">
+            <h1>WINNERS & ODDS</h1>
+            <div class="divider-thick"></div>
+        </div>
+        <h2 id="txt-scres-title">1セット目 1枚目 結果</h2>
+        <div class="divider-thin"></div>
+
+        <h3>今回の結果</h3>
+        <div id="container-scres-current" style="margin-bottom:14px;"></div>
+
+        <h3 id="txt-scres-history-title">履歴・統計</h3>
+        <p id="txt-scres-progress" style="font-size:12px; margin-bottom:8px;"></p>
+
+        <div class="summary-box">
+            <p>番号別 累計配当合計</p>
+            <div class="stats-grid" id="grid-scratch-stats"></div>
+        </div>
+
+        <div style="margin-top:auto;" id="box-scres-action">
+            </div>
+    </div>
+
+    <div id="screen-colors" class="screen">
+        <div class="winners-odds-header">
+            <h1>WINNERS & ODDS</h1>
+            <div class="divider-thick"></div>
+        </div>
+        <h2>番号の色設定</h2>
+        <div class="divider-thin"></div>
+
+        <h3>① 色を設定する番号を選択</h3>
+        <div class="flex-flow-container" id="grid-color-numbers"></div>
+
+        <div style="display:flex; align-items:center; margin-bottom:16px; font-size:13px;">
+            <span><span id="txt-selected-num">1</span>番の現在の色：</span>
+            <div id="color-preview-dot" class="circle-dot" style="width:28px; height:28px; margin:0 8px;"></div>
+            <button id="btn-reset-color" class="btn-text-accent">リセット</button>
+        </div>
+
+        <h3>② 24色パレットから選択</h3>
+        <div class="flex-flow-container" id="grid-palette-24"></div>
+
+        <button id="btn-toggle-custom" class="btn-outline">▼ カスタム色（RGBで指定）</button>
+        
+        <div id="wrapper-custom-picker" class="custom-picker-section" style="display:none;">
+            <div id="custom-rgb-preview" class="rgb-preview"></div>
+            <div class="rgb-slider-group">
+                <label>R: <span id="val-r">128</span></label>
+                <input type="range" id="slide-r" min="0" max="255" value="128">
+            </div>
+            <div class="rgb-slider-group">
+                <label>G: <span id="val-g">128</span></label>
+                <input type="range" id="slide-g" min="0" max="255" value="128">
+            </div>
+            <div class="rgb-slider-group">
+                <label>B: <span id="val-b">128</span></label>
+                <input type="range" id="slide-b" min="0" max="255" value="128">
+            </div>
+            <button id="btn-apply-custom" class="btn-dark" style="height:44px; font-size:12px;">この色を設定</button>
+        </div>
+
+        <button id="btn-colors-back" class="btn-dark" style="margin-top:auto;">← 設定に戻る</button>
+    </div>
+</div>
+
+<script>
+    // --- 0. カラー定数＆初期パレット ---
+    const PALETTE_24 = [
+        "#FF0000", "#FF4500", "#FF8C00", "#FFA500", "#FFD700", "#FFFF00", "#ADFF2F", "#00FF00",
+        "#00FA9A", "#00FFFF", "#00BFFF", "#1E90FF", "#0000FF", "#8A2BE2", "#FF00FF", "#FF1493",
+        "#FF69B4", "#FFFFFF", "#D3D3D3", "#808080", "#404040", "#000000", "#8B4513", "#A0522D"
+    ];
+    
+    const DEFAULT_COLORS = {
+        1: "#FFFFFF", 2: "#000000", 3: "#FF0000", 4: "#0000FF",
+        5: "#FFFF00", 6: "#008000", 7: "#FFA500", 8: "#800080"
+    };
+
+    // --- 1. 状態管理 (GameState) ---
+    let state = {
+        settings: { mode: "FULL", playerCount: 8, roundsPerSet: 5, setCount: 1, betPoints: 10, soundEnabled: true },
+        savedPlayers: [],
+        assignments: [],
+        currentCard: null,
+        history: [],
+        scratchOnlyHistory: [],
+        currentSet: 1,
+        currentRound: 1,
+        numberColors: { ...DEFAULT_COLORS },
+        isGameFinished: false
+    };
+
+    // 選択中のカスタムカラー対象番号
+    let selectedColorNumber = 1;
+
+    // --- 2. スクラッチデータ生成アルゴリズム (ScratchCardGenerator) ---
+    function generateScratchCard(denominator) {
+        let winnerNumbers = [];
+        let oddsValues = [];
+
+        // 1. 当選個数の決定 (85%で1個、15%で2個)
+        let winnerCount = Math.random() < 0.85 ? 1 : 2;
+        let pool = Array.from({ length: denominator }, (_, i) => i + 1);
+        
+        // 当選番号の抽選
+        for (let i = 0; i < winnerCount; i++) {
+            let idx = Math.floor(Math.random() * pool.length);
+            winnerNumbers.push(pool.splice(idx, 1)[0]);
+        }
+
+        // 2. 配当分子の決定 (0〜denominator-1)
+        for (let i = 0; i < winnerCount; i++) {
+            oddsValues.push(Math.floor(Math.random() * denominator));
+        }
+
+        // 3. マス目(Cell)の構築
+        let cells = [];
+        let idCounter = 0;
+
+        // 勝者セル (4マス)
+        for (let i = 0; i < 4; i++) {
+            let val = (i < winnerNumbers.length) ? `${winnerNumbers[i]}` : `${winnerNumbers[0]}`;
+            if (i === 3 && winnerNumbers.length === 2 && Math.random() < 0.5) {
+                val = `${winnerNumbers[1]}`;
+            }
+            cells.push({ id: `w_${idCounter++}`, type: "WINNER", hiddenValue: val, isScratched: false });
+        }
+        // シャッフル
+        cells.sort(() => Math.random() - 0.5);
+        let winnerCells = [...cells];
+
+        // 配当セル (4マス)
+        let oddsCells = [];
+        for (let i = 0; i < 4; i++) {
+            let val = (i < oddsValues.length) ? (oddsValues[i] === 0 ? "0" : `${oddsValues[i]}/${denominator}`) : (oddsValues[0] === 0 ? "0" : `${oddsValues[0]}/${denominator}`);
+            oddsCells.push({ id: `o_${idCounter++}`, type: "ODDS", hiddenValue: val, isScratched: false });
+        }
+        oddsCells.sort(() => Math.random() - 0.5);
+
+        return {
+            winnerNumbers,
+            oddsValues,
+            denominator,
+            winnerCells,
+            oddsCells,
+            cells: [...winnerCells, ...oddsCells]
+        };
+    }
+
+    // --- 3. コアロジック (ViewModel機能群) ---
+    function initApp() {
+        // ローカルストレージ読み込み
+        let localPlayers = localStorage.getItem("kamikeba_players");
+        if (localPlayers) state.savedPlayers = JSON.parse(localPlayers);
+        
+        let localColors = localStorage.getItem("kamikeba_colors");
+        if (localColors) state.numberColors = JSON.parse(localColors);
+
+        // プレイヤー人数のセレクトボックス生成 (2〜24)
+        let select = document.getElementById("select-player-count");
+        select.innerHTML = "";
+        for (let i = 2; i <= 24; i++) {
+            let opt = document.createElement("option");
+            opt.value = i;
+            opt.textContent = `${i}人`;
+            if (i === 8) opt.selected = true;
+            select.appendChild(opt);
+        }
+
+        setupEventListeners();
+        renderPlayerRegistration();
+        renderColorScreen();
+    }
+
+    function saveToStorage() {
+        localStorage.setItem("kamikeba_players", JSON.stringify(state.savedPlayers));
+        localStorage.setItem("kamikeba_colors", JSON.stringify(state.numberColors));
+    }
+
+    function startFullGame() {
+        state.currentSet = 1;
+        state.currentRound = 1;
+        state.history = [];
+        state.isGameFinished = false;
+        shuffleAssignments();
+        startRound();
+        switchScreen("screen-assignment");
+    }
+
+    function startScratchOnlyGame() {
+        state.currentSet = 1;
+        state.currentRound = 1;
+        state.scratchOnlyHistory = [];
+        state.isGameFinished = false;
+        startRound();
+        switchScreen("screen-race");
+    }
+
+    function shuffleAssignments() {
+        let pCount = state.settings.playerCount;
+        let shuffledPlayers = [...state.savedPlayers].sort(() => Math.random() - 0.5);
+        
+        state.assignments = [];
+        for (let i = 1; i <= pCount; i++) {
+            let pName = shuffledPlayers[i - 1] || `プレイヤー${i}`;
+            state.assignments.push({ number: i, playerName: pName });
+        }
+    }
+
+    function startRound() {
+        state.currentCard = generateScratchCard(state.settings.playerCount);
+        renderRaceCard();
+    }
+
+    function redoCurrentRound() {
+        if(confirm("カウントを進めず新しいカードを表示します。やり直しますか？")) {
+            startRound();
+        }
+    }
+
+    function scratchCell(cellId) {
+        let cell = state.currentCard.cells.find(c => c.id === cellId);
+        if (cell && !cell.isScratched) {
+            cell.isScratched = true;
+            if (state.settings.soundEnabled) playBeep();
+            checkScratchProgress();
+        }
+    }
+
+    function revealAllWinnerCells() {
+        state.currentCard.winnerCells.forEach(c => c.isScratched = true);
+        checkScratchProgress();
+        renderRaceCard();
+    }
+
+    function revealAllOddsCells() {
+        state.currentCard.oddsCells.forEach(c => c.isScratched = true);
+        checkScratchProgress();
+        renderRaceCard();
+    }
+
+    function revealAllCells() {
+        state.currentCard.cells.forEach(c => c.isScratched = true);
+        checkScratchProgress();
+        renderRaceCard();
+    }
+
+    function checkScratchProgress() {
+        let remaining = state.currentCard.cells.filter(c => !c.isScratched).length;
+        let msg = document.getElementById("txt-remaining-msg");
+        let btn = document.getElementById("btn-go-result");
+        
+        if (remaining > 0) {
+            msg.textContent = `残り ${remaining} マス タップまたはスワイプで削れます`;
+            btn.style.display = "none";
+        } else {
+            msg.textContent = "すべてのマスがオープンされました！";
+            btn.style.display = "block";
+        }
+    }
+
+    // フルモード用結果集計
+    function completeRound() {
+        let card = state.currentCard;
+        let roundResults = state.assignments.map(a => {
+            let isWinner = card.winnerNumbers.includes(a.number);
+            let score = 0;
+            let oddsDisplay = "―";
+
+            if (isWinner) {
+                let winIdx = card.winnerNumbers.indexOf(a.number);
+                let mol = card.oddsValues[winIdx];
+                oddsDisplay = mol === 0 ? "0" : `${mol}/${card.denominator}`;
+                score = Math.floor((state.settings.betPoints * mol) / card.denominator);
+            }
+
+            return {
+                number: a.number,
+                playerName: a.playerName,
+                isWinner,
+                oddsDisplay,
+                score
+            };
+        });
+
+        state.history.push({
+            setNumber: state.currentSet,
+            roundNumber: state.currentRound,
+            denominator: card.denominator,
+            winnerNumbers: card.winnerNumbers,
+            results: roundResults
+        });
+
+        // 終了判定
+        if (state.currentRound >= state.settings.roundsPerSet) {
+            if (state.currentSet >= state.settings.setCount) {
+                state.isGameFinished = true;
+            }
+        }
+    }
+
+    // スクラッチ専用モード用結果集計
+    function completeScratchOnly() {
+        let card = state.currentCard;
+        state.scratchOnlyHistory.push({
+            setNumber: state.currentSet,
+            scratchNumber: state.currentRound,
+            denominator: card.denominator,
+            winnerNumbers: card.winnerNumbers,
+            oddsValues: card.oddsValues
+        });
+
+        if (state.currentRound >= state.settings.roundsPerSet) {
+            if (state.currentSet >= state.settings.setCount) {
+                state.isGameFinished = true;
+            }
+        }
+    }
+
+    function getTotalScores() {
+        let scores = {};
+        state.savedPlayers.forEach(p => scores[p] = 0);
+        
+        state.history.forEach(h => {
+            h.results.forEach(r => {
+                if (scores[r.playerName] !== undefined) {
+                    scores[r.playerName] += r.score;
+                } else {
+                    scores[r.playerName] = r.score;
+                }
+            });
+        });
+
+        return Object.entries(scores).sort((a, b) => b[1] - a[1]);
+    }
+
+    function getScratchStats() {
+        let stats = {};
+        for (let i = 1; i <= state.settings.playerCount; i++) stats[i] = 0;
+
+        state.scratchOnlyHistory.forEach(h => {
+            h.winnerNumbers.forEach((num, idx) => {
+                let val = h.oddsValues[idx] || 0;
+                if (stats[num] !== undefined) stats[num] += val;
+            });
+        });
+        return stats;
+    }
+
+    function proceedNext() {
+        if (state.isGameFinished) return;
+        
+        state.currentRound++;
+        if (state.currentRound > state.settings.roundsPerSet) {
+            state.currentRound = 1;
+            state.currentSet++;
+        }
+
+        if (state.settings.mode === "FULL") {
+            shuffleAssignments();
+            startRound();
+            switchScreen("screen-assignment");
+        } else {
+            startRound();
+            switchScreen("screen-race");
+        }
+    }
+
+    // --- 4. UI描画・画面切り替え機構 (Composeの挙動再現) ---
+    function switchScreen(screenId) {
+        document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+        document.getElementById(screenId).classList.add("active");
+        window.scrollTo(0, 0);
+    }
+
+    function renderPlayerRegistration() {
+        document.getElementById("txt-registered-count").textContent = state.savedPlayers.length;
+        document.getElementById("txt-required-count").textContent = state.settings.playerCount;
+
+        let list = document.getElementById("list-players");
+        list.innerHTML = "";
+        state.savedPlayers.forEach((p, idx) => {
+            let item = document.createElement("div");
+            item.className = "player-item";
+            item.innerHTML = `
+                <span>${idx + 1}. <strong>${escapeHtml(p)}</strong></span>
+                <button class="btn-text-accent" onclick="removePlayer(${idx})">削除</button>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    function renderAssignmentScreen() {
+        document.getElementById("txt-assign-round").textContent = `${state.currentSet}セット目 - ${state.currentRound}回戦`;
+        let box = document.getElementById("box-assignments");
+        box.innerHTML = "";
+
+        state.assignments.forEach(a => {
+            let bg = state.numberColors[a.number] || "#E6DCD3";
+            let textCol = getLuminance(bg) > 0.5 ? "#000000" : "#F5EFEB";
+            
+            let row = document.createElement("div");
+            row.className = "assignment-row";
+            row.innerHTML = `
+                <div class="num-badge" style="background-color:${bg}; color:${textCol}">${a.number}</div>
+                <div style="font-size:14px; font-weight:bold;">${escapeHtml(a.playerName)}</div>
+            `;
+            box.appendChild(row);
+        });
+    }
+
+    function renderRaceCard() {
+        let isScratch = state.settings.mode === "SCRATCH";
+        document.getElementById("txt-race-progress").textContent = isScratch 
+            ? `${state.currentSet}枚目 (${state.currentRound}/${state.settings.roundsPerSet}枚完了)`
+            : `${state.currentSet}セット目 - ${state.currentRound}回戦`;
+
+        document.getElementById("txt-round-ratio").textContent = `${state.currentRound}/${state.settings.roundsPerSet}`;
+        document.getElementById("btn-toggle-sound").textContent = state.settings.soundEnabled ? "🔊" : "🔇";
+
+        // ミニプレビュー表示制御
+        let preview = document.getElementById("race-assignment-preview");
+        if (isScratch) {
+            preview.style.display = "none";
+        } else {
+            preview.style.display = "flex";
+            preview.innerHTML = "";
+            state.assignments.slice().sort((a,b)=>a.number-b.number).forEach(a => {
+                let bg = state.numberColors[a.number] || "#1A1A1A";
+                let textCol = getLuminance(bg) > 0.5 ? "#000000" : "#F5EFEB";
+                let chip = document.createElement("div");
+                chip.className = "preview-chip";
+                chip.innerHTML = `
+                    <div class="mini-badge" style="background-color:${bg}; color:${textCol}">${a.number}</div>
+                    <span>${escapeHtml(a.playerName.substring(0,3))}</span>
+                `;
+                preview.appendChild(chip);
+            });
+        }
+
+        // セル群生成
+        renderScratchCells("container-winner-cells", state.currentCard.winnerCells);
+        renderScratchCells("container-odds-cells", state.currentCard.oddsCells);
+        checkScratchProgress();
+    }
+
+    function renderScratchCells(containerId, cells) {
+        let container = document.getElementById(containerId);
+        container.innerHTML = "";
+
+        cells.forEach(cell => {
+            let box = document.createElement("div");
+            box.className = "scratch-cell-box";
+
+            // 文字描画用の隠れレイヤー
+            let valDiv = document.createElement("div");
+            valDiv.style.position = "absolute";
+            valDiv.style.width = "100%";
+            valDiv.style.height = "100%";
+            valDiv.style.display = "flex";
+            valDiv.style.justifyContent = "center";
+            valDiv.style.alignItems = "center";
+            valDiv.style.fontWeight = "bold";
+            valDiv.style.fontFamily = "serif";
+            valDiv.style.fontSize = cell.hiddenValue.includes("/") ? "15px" : "24px";
+            valDiv.textContent = cell.hiddenValue;
+            box.appendChild(valDiv);
+
+            // スクリスクラッチ用Canvas
+            if (!cell.isScratched) {
+                let canvas = document.createElement("canvas");
+                canvas.className = "scratch-canvas";
+                box.appendChild(canvas);
+
+                // レンダリング遅延対策にリサイズ保証
+                setTimeout(() => initCanvasScratch(canvas, cell.id), 0);
+            }
+
+            container.appendChild(box);
+        });
+    }
+
+    // --- HTML5 Canvas スクリスクラッチエフェクト (destination-out実装) ---
+    function initCanvasScratch(canvas, cellId) {
+        let rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+
+        let ctx = canvas.getContext("2d");
+        // 銀削り風マット色
+        ctx.fillStyle = "#9E9E9E";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // 外枠線
+        ctx.strokeStyle = "#1A1A1A";
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+        let isDrawing = false;
+        let strokeLength = 0;
+        let tapCount = 0;
+
+        // ダブルタップで全開判定
+        canvas.addEventListener("click", () => {
+            tapCount++;
+            if (tapCount >= 2) {
+                clearCanvas();
+            }
+            setTimeout(() => tapCount = 0, 300);
+        });
+
+        function clearCanvas() {
+            canvas.style.display = "none";
+            scratchCell(cellId);
+        }
+
+        function draw(x, y) {
+            ctx.globalCompositeOperation = "destination-out";
+            ctx.lineWidth = 22; 
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            strokeLength++;
+
+            // 一定以上擦ったら全開
+            if (strokeLength > 25) {
+                clearCanvas();
+            }
+        }
+
+        // マウスイベント
+        canvas.addEventListener("mousedown", (e) => {
+            isDrawing = true;
+            ctx.beginPath();
+            ctx.moveTo(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top);
+        });
+        canvas.addEventListener("mousemove", (e) => {
+            if (!isDrawing) return;
+            draw(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top);
+        });
+        window.addEventListener("mouseup", () => isDrawing = false);
+
+        // タッチイベント
+        canvas.addEventListener("touchstart", (e) => {
+            isDrawing = true;
+            ctx.beginPath();
+            let t = e.touches[0];
+            ctx.moveTo(t.clientX - canvas.getBoundingClientRect().left, t.clientY - canvas.getBoundingClientRect().top);
+        });
+        canvas.addEventListener("touchmove", (e) => {
+            if (!isDrawing) return;
+            let t = e.touches[0];
+            draw(t.clientX - canvas.getBoundingClientRect().left, t.clientY - canvas.getBoundingClientRect().top);
+            e.preventDefault();
+        });
+        window.addEventListener("touchend", () => isDrawing = false);
+    }
+
+    // --- 結果画面表示 ---
+    function renderResultScreen() {
+        let lastRound = state.history[state.history.length - 1];
+        if (!lastRound) return;
+
+        document.getElementById("txt-res-title").textContent = `${lastRound.setNumber}セット目 ${lastRound.roundNumber}回戦 結果`;
+        document.getElementById("txt-res-bet-info").textContent = `賭け点数：${state.settings.betPoints}点 分母：${lastRound.denominator}`;
+        document.getElementById("txt-res-winners").textContent = `当選番号：${lastRound.winnerNumbers.join("、")}番`;
+
+        let table = document.getElementById("table-current-round");
+        table.innerHTML = `
+            <div class="result-table-row header">
+                <div class="col-1">番号</div><div class="col-2">名前</div><div class="col-3">配当</div><div class="col-4">獲得点</div>
+            </div>
+        `;
+
+        lastRound.results.forEach(r => {
+            let dotBg = state.numberColors[r.number] || "#1A1A1A";
+            let row = document.createElement("div");
+            row.className = `result-table-row ${r.score > 0 ? 'highlight' : ''}`;
+            row.innerHTML = `
+                <div class="col-1"><span class="circle-dot" style="background-color:${dotBg}"></span>${r.isWinner ? '★' : ''}${r.number}</div>
+                <div class="col-2">${escapeHtml(r.playerName)}</div>
+                <div class="col-3">${r.oddsDisplay}</div>
+                <div class="col-4">${r.isWinner ? r.score + '点' : '―'}</div>
+            `;
+            table.appendChild(row);
+        });
+
+        // 累計ランキング表示
+        let rankWrapper = document.getElementById("wrapper-ranking");
+        if (state.history.length > 1) {
+            rankWrapper.style.display = "block";
+            let rankTable = document.getElementById("table-cumulative-ranking");
+            rankTable.innerHTML = `
+                <div class="result-table-row header">
+                    <div class="col-1">順位</div><div class="col-2">名前</div><div class="col-3"></div><div class="col-4">累計点</div>
+                </div>
+            `;
+            let totals = getTotalScores();
+            totals.forEach(([name, score], idx) => {
+                let row = document.createElement("div");
+                row.className = `result-table-row ${idx === 0 ? 'highlight' : ''}`;
+                row.innerHTML = `
+                    <div class="col-1">${idx + 1}位</div>
+                    <div class="col-2">${escapeHtml(name)}</div>
+                    <div class="col-3"></div>
+                    <div class="col-4">${score}点</div>
+                `;
+                rankTable.appendChild(row);
+            });
+        } else {
+            rankWrapper.style.display = "none";
+        }
+
+        // アクションボタン分岐
+        let actBox = document.getElementById("box-result-action");
+        actBox.innerHTML = "";
+        if (state.isGameFinished) {
+            let h1 = document.createElement("h1");
+            h1.className = "accent-text font-serif";
+            h1.style.textAlign = "center";
+            h1.style.fontSize = "20px";
+            h1.style.margin = "14px 0";
+            h1.textContent = "全回戦終了！";
+            actBox.appendChild(h1);
+
+            let btn = document.createElement("button");
+            btn.className = "btn-dark";
+            btn.textContent = "最初から";
+            btn.onclick = () => { resetAll(); switchScreen("screen-settings"); };
+            actBox.appendChild(btn);
+        } else {
+            let btn = document.createElement("button");
+            btn.className = "btn-dark";
+            btn.textContent = "次の回戦へ →";
+            btn.onclick = () => proceedNext();
+            actBox.appendChild(btn);
+        }
+    }
+
+    // スクラッチ専用結果画面表示
+    function renderScratchOnlyResultScreen() {
+        let lastHistory = state.scratchOnlyHistory[state.scratchOnlyHistory.length - 1];
+        if (!lastHistory) return;
+
+        document.getElementById("txt-scres-title").textContent = `${lastHistory.setNumber}セット目 ${lastHistory.scratchNumber}枚目 結果`;
+        
+        let container = document.getElementById("container-scres-current");
+        container.innerHTML = "";
+        lastHistory.winnerNumbers.forEach((num, idx) => {
+            let odds = lastHistory.oddsValues[idx] || 0;
+            let dotBg = state.numberColors[num] || "#1A1A1A";
+            let box = document.createElement("div");
+            box.className = "assignment-box";
+            box.style.display = "flex";
+            box.style.justifyContent = "space-between";
+            box.style.alignItems = "center";
+            box.style.marginButton = "6px";
+            box.innerHTML = `
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span class="circle-dot" style="background-color:${dotBg}"></span>
+                    <span class="accent-text" style="font-weight:bold;">当選 ${num}番</span>
+                </div>
+                <div style="font-weight:bold;">${odds === 0 ? '0' : odds + '/' + lastHistory.denominator}</div>
+            `;
+            container.appendChild(box);
+        });
+
+        let currentSetCount = state.scratchOnlyHistory.filter(h => h.setNumber === lastHistory.setNumber).length;
+        document.getElementById("txt-scres-progress").textContent = `現在：${lastHistory.setNumber}セット目 ${currentSetCount}/${state.settings.roundsPerSet}枚完了`;
+
+        // 統計グリッド表示 (chunked(4)をCSS Gridで表現)
+        let stats = getScratchStats();
+        let grid = document.getElementById("grid-scratch-stats");
+        grid.innerHTML = "";
+        for (let i = 1; i <= lastHistory.denominator; i++) {
+            let dotBg = state.numberColors[i] || "#1A1A1A";
+            let item = document.createElement("div");
+            item.className = "stats-item";
+            item.innerHTML = `
+                <div style="display:flex; align-items:center; gap:2px;">
+                    <span class="circle-dot" style="width:6px; height:6px; background-color:${dotBg}"></span>
+                    <strong>${i}</strong>
+                </div>
+                <div class="val">${stats[i] || 0}</div>
+            `;
+            grid.appendChild(item);
+        }
+
+        let actBox = document.getElementById("box-scres-action");
+        actBox.innerHTML = "";
+        
+        let isSetComplete = currentSetCount >= state.settings.roundsPerSet;
+        if (isSetComplete && state.currentSet >= state.settings.setCount) {
+            let h1 = document.createElement("h1");
+            h1.className = "accent-text font-serif";
+            h1.style.textAlign = "center";
+            h1.style.fontSize = "20px";
+            h1.style.margin = "14px 0";
+            h1.textContent = "全セット終了！";
+            actBox.appendChild(h1);
+
+            let btn = document.createElement("button");
+            btn.className = "btn-dark";
+            btn.textContent = "最初から";
+            btn.onclick = () => { resetAll(); switchScreen("screen-settings"); };
+            actBox.appendChild(btn);
+        } else {
+            let btn = document.createElement("button");
+            btn.className = "btn-dark";
+            btn.textContent = "次のスクラッチへ →";
+            btn.onclick = () => proceedNext();
+            actBox.appendChild(btn);
+        }
+    }
+
+    // --- 7. カラーカスタム画面 ---
+    function renderColorScreen() {
+        let n = state.settings.playerCount;
+        let grid = document.getElementById("grid-color-numbers");
+        grid.innerHTML = "";
+
+        for (let i = 1; i <= n; i++) {
+            let bg = state.numberColors[i] || "#E6DCD3";
+            let textCol = getLuminance(bg) > 0.5 ? "#000000" : "#F5EFEB";
+            let btn = document.createElement("div");
+            btn.className = `circle-btn ${selectedColorNumber === i ? 'active' : ''}`;
+            btn.style.backgroundColor = bg;
+            btn.style.color = textCol;
+            btn.textContent = i;
+            btn.onclick = () => {
+                selectedColorNumber = i;
+                document.getElementById("wrapper-custom-picker").style.display = "none";
+                renderColorScreen();
+            };
+            grid.appendChild(btn);
+        }
+
+        // 現在色更新
+        document.getElementById("txt-selected-num").textContent = selectedColorNumber;
+        let currentHex = state.numberColors[selectedColorNumber];
+        let dot = document.getElementById("color-preview-dot");
+        dot.style.backgroundColor = currentHex || "#1A1A1A";
+
+        // 24色パレット更新
+        let pGrid = document.getElementById("grid-palette-24");
+        pGrid.innerHTML = "";
+        PALETTE_24.forEach(hex => {
+            let chip = document.createElement("div");
+            chip.className = "palette-chip";
+            chip.style.backgroundColor = hex;
+            chip.onclick = () => {
+                state.numberColors[selectedColorNumber] = hex;
+                saveToStorage();
+                renderColorScreen();
+            };
+            pGrid.appendChild(chip);
+        });
+    }
+
+    // --- 各種イベントリスナー登録 ---
+    function setupEventListeners() {
+        // 設定画面から次へ
+        document.getElementById("btn-settings-next").onclick = () => {
+            let mode = document.querySelector('input[name="gameMode"]:checked').value;
+            state.settings.mode = mode;
+            state.settings.playerCount = parseInt(document.getElementById("select-player-count").value);
+            state.settings.roundsPerSet = parseInt(document.getElementById("select-rounds").value);
+            state.settings.setCount = parseInt(document.getElementById("select-sets").value);
+            state.settings.betPoints = parseInt(document.getElementById("select-bet").value);
+
+            if (mode === "FULL") {
+                renderPlayerRegistration();
+                switchScreen("screen-players");
+            } else {
+                startScratchOnlyGame();
+            }
+        };
+
+        // ラジオボタン切り替えで賭け点数の表示制御
+        document.getElementsByName("gameMode").forEach(r => {
+            r.onchange = (e) => {
+                document.getElementById("row-bet-points").style.style = e.target.value === "SCRATCH" ? "none" : "block";
+            };
+        });
+
+        document.getElementById("btn-go-colors").onclick = () => {
+            state.settings.playerCount = parseInt(document.getElementById("select-player-count").value);
+            renderColorScreen();
+            switchScreen("screen-colors");
+        };
+
+        // プレイヤー登録系
+        document.getElementById("btn-add-player").onclick = addPlayer;
+        document.getElementById("input-player-name").onkeydown = (e) => { if(e.key === "Enter") addPlayer(); };
+        document.getElementById("btn-players-back").onclick = () => switchScreen("screen-settings");
+        document.getElementById("btn-players-start").onclick = () => {
+            if (state.savedPlayers.length < state.settings.playerCount) {
+                alert(`参加人数（分母）と同じ ${state.settings.playerCount} 人の登録が必要です！`);
+                return;
+            }
+            startFullGame();
+        };
+
+        // 割当からスクラッチへ
+        document.getElementById("btn-assignment-next").onclick = () => {
+            switchScreen("screen-race");
+        };
+
+        // スクラッチ一発オープン系
+        document.getElementById("btn-reveal-winners").onclick = revealAllWinnerCells;
+        document.getElementById("btn-reveal-odds").onclick = revealAllOddsCells;
+        document.getElementById("btn-reveal-all").onclick = revealAllCells;
+        document.getElementById("btn-redo-round").onclick = redoCurrentRound;
+        document.getElementById("btn-toggle-sound").onclick = () => {
+            state.settings.soundEnabled = !state.settings.soundEnabled;
+            document.getElementById("btn-toggle-sound").textContent = state.settings.soundEnabled ? "🔊" : "🔇";
+        };
+
+        // 結果ボタン
+        document.getElementById("btn-go-result").onclick = () => {
+            if (state.settings.mode === "FULL") {
+                completeRound();
+                renderResultScreen();
+                switchScreen("screen-result");
+            } else {
+                completeScratchOnly();
+                renderScratchOnlyResultScreen();
+                switchScreen("screen-result-scratch");
+            }
+        };
+
+        // 色リセット
+        document.getElementById("btn-reset-color").onclick = () => {
+            if (DEFAULT_COLORS[selectedColorNumber]) {
+                state.numberColors[selectedColorNumber] = DEFAULT_COLORS[selectedColorNumber];
+            } else {
+                delete state.numberColors[selectedColorNumber];
+            }
+            saveToStorage();
+            renderColorScreen();
+        };
+
+        // カスタムカラーアコーディオン
+        let btnToggle = document.getElementById("btn-toggle-custom");
+        let wrapperCustom = document.getElementById("wrapper-custom-picker");
+        btnToggle.onclick = () => {
+            let isHidden = wrapperCustom.style.display === "none";
+            wrapperCustom.style.display = isHidden ? "block" : "none";
+            btnToggle.textContent = isHidden ? "▲ カスタム色を閉じる" : "▼ カスタム色（RGBで指定）";
+            if(isHidden) updateCustomPreview();
+        };
+
+        // RGBスライダー変動イベント
+        ["r", "g", "b"].forEach(c => {
+            let slider = document.getElementById(`slide-${c}`);
+            slider.oninput = () => {
+                document.getElementById(`val-${c}`).textContent = slider.value;
+                updateCustomPreview();
+            };
+        });
+
+        // カスタムカラー決定ボタン
+        document.getElementById("btn-apply-custom").onclick = () => {
+            let r = parseInt(document.getElementById("slide-r").value);
+            let g = parseInt(document.getElementById("slide-g").value);
+            let b = parseInt(document.getElementById("slide-b").value);
+            let hex = "#" + [r, g, b].map(x => x.toString(16).padStart(2, "0")).join("").toUpperCase();
+            
+            state.numberColors[selectedColorNumber] = hex;
+            saveToStorage();
+            renderColorScreen();
+            wrapperCustom.style.display = "none";
+            btnToggle.textContent = "▼ カスタム色（RGBで指定）";
+        };
+
+        document.getElementById("btn-colors-back").onclick = () => switchScreen("screen-settings");
+    }
+
+    function addPlayer() {
+        let input = document.getElementById("input-player-name");
+        let name = input.value.trim();
+        if (!name) return;
+        if (state.savedPlayers.includes(name)) {
+            alert("同名のプレイヤーが既に登録されています。");
+            return;
+        }
+        if (state.savedPlayers.length >= state.settings.playerCount) {
+            alert(`今回の設定人数（${state.settings.playerCount}人）を超えています。先に設定を変更してください。`);
+            return;
+        }
+
+        state.savedPlayers.push(name);
+        saveToStorage();
+        input.value = "";
+        renderPlayerRegistration();
+    }
+
+    function removePlayer(idx) {
+        state.savedPlayers.splice(idx, 1);
+        saveToStorage();
+        renderPlayerRegistration();
+    }
+
+    function updateCustomPreview() {
+        let r = parseInt(document.getElementById("slide-r").value);
+        let g = parseInt(document.getElementById("slide-g").value);
+        let b = parseInt(document.getElementById("slide-b").value);
+        let rgbStr = `rgb(${r}, ${g}, ${b})`;
+        let preview = document.getElementById("custom-rgb-preview");
+        preview.style.backgroundColor = rgbStr;
+    }
+
+    function resetAll() {
+        state.currentSet = 1;
+        state.currentRound = 1;
+        state.history = [];
+        state.scratchOnlyHistory = [];
+        state.isGameFinished = false;
+    }
+
+    // --- 便利ユーティリティ関数群 ---
+    function getLuminance(hex) {
+        let c = hex.substring(1);
+        let rgb = parseInt(c, 16);
+        let r = (rgb >> 16) & 0xff;
+        let g = (rgb >> 8) & 0xff;
+        let b = (rgb >> 0) & 0xff;
+        return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // Web Audio APIによる簡易Beep音 (Kotlinの効果音の軽量再現)
+    function playBeep() {
+        try {
+            let ctx = new (window.AudioContext || window.webkitAudioContext)();
+            let osc = ctx.createOscillator();
+            let gain = ctx.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(880, ctx.currentTime); // 高めのピピッ音
+            gain.gain.setValueAtTime(0.05, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.1);
+        } catch(e) {}
+    }
+
+    // アプリ起動
+    window.onload = initApp;
+</script>
+
+</body>
+</html>
