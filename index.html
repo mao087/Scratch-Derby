@@ -1,1645 +1,1138 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WINNERS & ODDS</title>
-    <style>
-        /* --- クラシック競馬新聞テーマカラー --- */
-        :root {
-            --color-paper-cream: #F5EFEB;
-            --color-paper-tan: #E6DCD3;
-            --color-ink-black: #1A1A1A;
-            --color-accent-red: #C82323;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Georgia', 'Times New Roman', 'Shippori Mincho', serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            background-color: var(--color-paper-cream);
-            color: var(--color-ink-black);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* --- 画面全体のコンテナ（スマホ最適化） --- */
-        .app-container {
-            width: 100%;
-            max-width: 450px;
-            min-height: 100vh;
-            background-color: var(--color-paper-cream);
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid var(--color-ink-black);
-            border-right: 1px solid var(--color-ink-black);
-            padding: 20px;
-        }
-
-        .screen {
-            display: none;
-            flex-direction: column;
-            width: 100%;
-            height: 100%;
-            flex-grow: 1;
-        }
-
-        .screen.active {
-            display: flex;
-        }
-
-        /* --- 共通コンポーネント: ヘッダー --- */
-        .winners-odds-header {
-            text-align: center;
-            margin-bottom: 8px;
-        }
-
-        .winners-odds-header h1 {
-            font-size: 26px;
-            font-weight: 900;
-            letter-spacing: 2px;
-            color: var(--color-ink-black);
-        }
-
-        .divider-thick {
-            border: none;
-            height: 3px;
-            background-color: var(--color-ink-black);
-            margin-top: 2px;
-        }
-
-        .divider-thin {
-            border: none;
-            height: 1px;
-            background-color: var(--color-ink-black);
-            margin: 12px 0;
-        }
-
-        h2 {
-            font-size: 16px;
-            font-weight: bold;
-            text-align: center;
-            margin-top: 4px;
-        }
-
-        h3 {
-            font-size: 13px;
-            font-weight: bold;
-            margin: 14px 0 6px 0;
-        }
-
-        /* --- ボタン共通 --- */
-        .btn-dark {
-            background-color: var(--color-ink-black);
-            color: var(--color-paper-cream);
-            border: none;
-            height: 52px;
-            border-radius: 4px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .btn-outline {
-            background: transparent;
-            color: var(--color-ink-black);
-            border: 1px solid var(--color-ink-black);
-            height: 44px;
-            border-radius: 4px;
-            font-size: 13px;
-            cursor: pointer;
-            width: 100%;
-        }
-
-        .btn-text-accent {
-            background: transparent;
-            color: var(--color-accent-red);
-            border: none;
-            font-size: 12px;
-            cursor: pointer;
-            padding: 4px 8px;
-        }
-
-        /* --- 1. 設定画面用スタイル --- */
-        .settings-row {
-            margin-bottom: 16px;
-        }
-
-        .settings-row label {
-            display: block;
-            font-size: 12px;
-            font-weight: bold;
-            margin-bottom: 4px;
-        }
-
-        .radio-group {
-            display: flex;
-            border: 1px solid var(--color-ink-black);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .radio-item {
-            flex: 1;
-            text-align: center;
-        }
-
-        .radio-item input {
-            display: none;
-        }
-
-        .radio-item label {
-            display: block;
-            padding: 10px 0;
-            font-size: 13px;
-            background-color: var(--color-paper-cream);
-            color: var(--color-ink-black);
-            cursor: pointer;
-            margin: 0;
-        }
-
-        .radio-item input:checked + label {
-            background-color: var(--color-ink-black);
-            color: var(--color-paper-cream);
-        }
-
-        .select-input, .text-input {
-            width: 100%;
-            height: 44px;
-            border: 1px solid var(--color-ink-black);
-            border-radius: 4px;
-            background-color: var(--color-paper-cream);
-            padding: 0 10px;
-            font-size: 14px;
-            color: var(--color-ink-black);
-        }
-
-        /* --- 2. プレイヤー登録用スタイル --- */
-        .player-input-row {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .player-list {
-            border: 1px solid var(--color-ink-black);
-            border-radius: 4px;
-            background-color: var(--color-paper-tan);
-            padding: 10px;
-            max-height: 200px;
-            overflow-y: auto;
-            margin-bottom: 16px;
-        }
-
-        .player-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            font-size: 13px;
-            border-bottom: 0.5px solid rgba(26,26,26,0.2);
-        }
-
-        .player-item:last-child {
-            border-bottom: none;
-        }
-
-        /* --- 3. 馬番割当用スタイル --- */
-        .assignment-box {
-            border: 1px solid var(--color-ink-black);
-            border-radius: 4px;
-            background-color: rgba(230, 220, 211, 0.85);
-            padding: 10px;
-            margin-bottom: 20px;
-        }
-
-        .assignment-row {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .num-badge {
-            width: 32px;
-            height: 32px;
-            border-radius: 4px;
-            border: 1px solid var(--color-ink-black);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 14px;
-            font-weight: 900;
-            margin-right: 12px;
-        }
-
-        /* --- 4. スクラッチ画面用スタイル（★背景画像対応） --- */
-        #screen-race {
-            position: relative;
-        }
-
-        /* 背景画像レイヤー (KotlinのImage/alpha=0.22fを完全再現) */
-        .race-bg-image {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: url('winners_odds_bg.jpg');
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            opacity: 0.22;
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .race-content {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            flex-grow: 1;
-        }
-
-        .race-top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: rgba(26, 26, 26, 0.92);
-            color: var(--color-paper-cream);
-            padding: 8px 14px;
-            font-size: 13px;
-            font-weight: bold;
-            border-radius: 4px;
-            margin-bottom: 6px;
-        }
-
-        .action-row-buttons {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 8px;
-        }
-
-        .btn-mini {
-            flex: 1;
-            height: 36px;
-            border: none;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: bold;
-            color: var(--color-paper-cream);
-            cursor: pointer;
-        }
-
-        .btn-mini.dark { background-color: rgba(26, 26, 26, 0.75); }
-        .btn-mini.accent { background-color: rgba(200, 35, 35, 0.85); }
-
-        .preview-bar {
-            display: flex;
-            justify-content: space-evenly;
-            background-color: rgba(245, 239, 235, 0.9);
-            border: 1px solid var(--color-ink-black);
-            border-radius: 4px;
-            padding: 6px;
-            margin-bottom: 8px;
-        }
-
-        .preview-chip {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .preview-chip .mini-badge {
-            width: 28px;
-            height: 28px;
-            border-radius: 4px;
-            border: 1px solid var(--color-ink-black);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 12px;
-            font-weight: 800;
-        }
-
-        .preview-chip span {
-            font-size: 9px;
-            margin-top: 2px;
-        }
-
-        .scratch-card-container {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        .scratch-column {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .cells-wrapper {
-            width: 100%;
-            border: 1px solid var(--color-ink-black);
-            border-radius: 4px;
-            background-color: rgba(245, 239, 235, 0.85);
-            padding: 6px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        /* スクラッチセルアウター */
-        .scratch-cell-box {
-            position: relative;
-            width: 100%;
-            height: 48px;
-            border: 1.5px solid var(--color-ink-black);
-            background-color: var(--color-paper-cream);
-            overflow: hidden;
-        }
-
-        .scratch-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2;
-            cursor: crosshair;
-        }
-
-        /* --- 5. 結果画面用スタイル --- */
-        .summary-box {
-            border: 1px solid var(--color-ink-black);
-            border-radius: 4px;
-            background-color: var(--color-paper-tan);
-            padding: 10px;
-            margin-bottom: 10px;
-            font-size: 11px;
-            font-weight: bold;
-        }
-
-        .accent-text { color: var(--color-accent-red); }
-
-        .result-table {
-            width: 100%;
-            margin-bottom: 16px;
-        }
-
-        .result-table-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            font-size: 12px;
-            border-bottom: 0.5px solid rgba(26,26,26,0.3);
-        }
-
-        .result-table-row.header {
-            font-weight: bold;
-            border-bottom: 1px solid var(--color-ink-black);
-        }
-
-        .result-table-row.highlight {
-            background-color: var(--color-paper-tan);
-            font-weight: bold;
-            color: var(--color-accent-red);
-        }
-
-        .col-1 { flex: 1.5; display: flex; align-items: center; gap: 4px; }
-        .col-2 { flex: 2; }
-        .col-3 { flex: 1.5; text-align: right; }
-        .col-4 { flex: 1.5; text-align: right; }
-
-        .circle-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            border: 0.5px solid var(--color-ink-black);
-            display: inline-block;
-        }
-
-        /* スクラッチ専用統計用グリッド */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-            margin-top: 6px;
-        }
-
-        .stats-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-size: 10px;
-        }
-
-        .stats-item .val {
-            font-size: 12px;
-            font-weight: 900;
-            color: var(--color-accent-red);
-        }
-
-        /* --- 6. 色設定画面用スタイル --- */
-        .flex-flow-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-
-        .circle-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            border: 1px solid var(--color-ink-black);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 14px;
-            font-weight: 800;
-            cursor: pointer;
-        }
-
-        .circle-btn.active {
-            border: 3px solid var(--color-accent-red);
-        }
-
-        .palette-chip {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border: 1.5px solid var(--color-ink-black);
-            cursor: pointer;
-        }
-
-        .custom-picker-section {
-            border: 1px solid var(--color-ink-black);
-            border-radius: 4px;
-            padding: 10px;
-            margin-top: 10px;
-        }
-
-        .rgb-preview {
-            width: 100%;
-            height: 48px;
-            border-radius: 8px;
-            border: 1px solid var(--color-ink-black);
-            margin-bottom: 8px;
-        }
-
-        .rgb-slider-group {
-            margin-bottom: 8px;
-        }
-
-        .rgb-slider-group label {
-            display: block;
-            font-size: 12px;
-        }
-
-        .rgb-slider-group input {
-            width: 100%;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WINNERS &amp; ODDS - カミケバ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1A1008;
+    --cream:#F5F0E8;
+    --tan:#E8DFD0;
+    --red:#8B1A1A;
+    --green:#2D5A1B;
+    --brown:#4A3828;
+    --gray:#8a8a8a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    color:var(--ink);
+    background-color:var(--cream);
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(139,26,26,0.03) 0, transparent 45%),
+      radial-gradient(circle at 85% 80%, rgba(26,16,8,0.04) 0, transparent 45%),
+      repeating-linear-gradient(0deg, rgba(26,16,8,0.015) 0px, rgba(26,16,8,0.015) 1px, transparent 1px, transparent 3px);
+    min-height:100%;
+    display:flex;
+    justify-content:center;
+  }
+  .serif{font-family:'Shippori Mincho', serif;}
+  #app{
+    width:100%;
+    max-width:480px;
+    min-height:100vh;
+    position:relative;
+    background:var(--cream);
+    box-shadow:0 0 40px rgba(0,0,0,0.08);
+  }
+  .screen{
+    padding:20px 20px 32px;
+    animation:fadeIn .25s ease;
+  }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  /* ---------- header stamp ---------- */
+  .header-wrap{ text-align:center; margin-bottom:8px; }
+  .header-title{
+    font-family:'Shippori Mincho', serif;
+    font-weight:800;
+    font-size:24px;
+    letter-spacing:3px;
+    color:var(--ink);
+    position:relative;
+    display:inline-block;
+    padding:0 6px;
+  }
+  .header-title::after{
+    content:'';
+    position:absolute; left:-14px; top:-8px;
+    width:calc(100% + 28px); height:calc(100% + 14px);
+    border:1.5px solid var(--red);
+    border-radius:50%;
+    opacity:0.35;
+    transform:rotate(-3deg);
+    pointer-events:none;
+  }
+  .header-divider{ border:none; border-top:2px solid var(--ink); margin:8px 0 0; }
+  .screen-title{
+    font-family:'Shippori Mincho', serif;
+    font-weight:700; font-size:16px; margin:8px 0 4px;
+    text-align:left;
+  }
+  .thin-divider{ border:none; border-top:1px solid var(--ink); margin:0 0 12px; }
+
+  /* ---------- buttons ---------- */
+  .btn{
+    width:100%; height:52px; border:none; border-radius:4px;
+    font-family:'Shippori Mincho', serif; font-weight:700; font-size:16px;
+    cursor:pointer; letter-spacing:1px;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    transition:transform .08s ease, filter .15s ease;
+  }
+  .btn:active{ transform:scale(0.98); }
+  .btn:disabled{ opacity:0.4; cursor:not-allowed; }
+  .btn-ink{ background:var(--ink); color:var(--cream); }
+  .btn-brown{ background:var(--brown); color:var(--cream); }
+  .btn-green{ background:var(--green); color:#fff; }
+  .btn-red{ background:var(--red); color:#fff; }
+  .btn-outline{
+    background:transparent; border:1px solid var(--ink); color:var(--ink);
+    height:44px; border-radius:4px; font-size:13px; width:100%; cursor:pointer;
+  }
+  .btn-small{ height:36px; font-size:12px; border-radius:8px; font-family:'Zen Kaku Gothic New',sans-serif; font-weight:700; }
+
+  /* ---------- setting row ---------- */
+  .setting-row{
+    display:flex; align-items:center; justify-content:space-between;
+    border:1px solid var(--ink); border-radius:4px;
+    padding:8px 14px; margin-bottom:8px;
+  }
+  .setting-label{ font-weight:700; font-size:14px; }
+  .stepper{ display:flex; align-items:center; gap:0; }
+  .stepper button{
+    width:34px; height:34px; border:none; border-radius:4px;
+    background:var(--ink); color:var(--cream); font-weight:700; font-size:16px; cursor:pointer;
+  }
+  .stepper button:disabled{ background:#c9c2b6; cursor:not-allowed; }
+  .stepper .val{ width:82px; text-align:center; font-size:15px; font-weight:800; }
+
+  .info-box{
+    border:1px solid var(--ink); border-radius:4px; background:var(--tan);
+    padding:10px; font-size:11px; line-height:1.6; margin-bottom:8px; white-space:pre-line;
+  }
+  .toggle-row{
+    display:flex; align-items:center; justify-content:space-between;
+    border:1px solid var(--ink); border-radius:4px; padding:8px 14px; margin-bottom:8px;
+  }
+  .toggle-row .sub{ font-size:10px; color:#777; }
+  .switch{ position:relative; width:42px; height:24px; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .switch .track{
+    position:absolute; inset:0; background:#c9c2b6; border-radius:24px; cursor:pointer; transition:.15s;
+  }
+  .switch .track::before{
+    content:''; position:absolute; width:18px; height:18px; left:3px; top:3px;
+    background:var(--cream); border-radius:50%; transition:.15s;
+  }
+  .switch input:checked + .track{ background:var(--red); }
+  .switch input:checked + .track::before{ transform:translateX(18px); }
+  .switch-label{ font-size:12px; margin-right:8px; }
+
+  .advanced-box{ border:1px solid var(--red); border-radius:4px; padding:12px; margin-bottom:8px; }
+  .advanced-box h4{ margin:0 0 10px; color:var(--red); font-size:13px; }
+  .slider-label{ font-size:12px; margin-bottom:2px; }
+  input[type=range]{ width:100%; accent-color:var(--red); margin-bottom:8px; }
+
+  /* ---------- flow row / chips ---------- */
+  .flow-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{
+    padding:10px 16px; border-radius:20px; border:1px solid var(--ink);
+    background:var(--tan); color:var(--ink); font-size:14px; font-weight:700; cursor:pointer;
+  }
+  .chip.filled{ background:var(--ink); color:var(--cream); }
+  .chip.selected{ background:var(--red); color:var(--cream); }
+
+  .num-circle{
+    width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:16px; cursor:pointer; border:none; position:relative;
+  }
+  .num-circle.disabled{ opacity:0.5; cursor:not-allowed; }
+  .num-circle.small{ width:36px; height:36px; font-size:13px; }
+
+  /* ---------- player select grid ---------- */
+  .player-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+  .player-card{
+    display:flex; align-items:center; justify-content:space-between;
+    border:1px solid var(--ink); border-radius:8px; background:var(--tan);
+    padding:14px 8px 14px 14px; cursor:pointer;
+  }
+  .player-card.selected{ background:var(--ink); color:var(--cream); }
+  .player-card .name{ font-weight:700; font-size:15px; }
+  .player-card button{
+    background:none; border:none; cursor:pointer; font-size:16px; color:inherit; opacity:.6; line-height:1;
+  }
+  .input-row{ display:flex; align-items:center; gap:8px; margin-top:12px; }
+  .input-row input{
+    flex:1; border:1px solid var(--gray); border-radius:4px; padding:12px 10px;
+    font-size:14px; background:transparent; color:var(--ink); font-family:inherit;
+  }
+  .input-row input:focus{ outline:none; border-color:var(--ink); }
+  .icon-btn{
+    width:46px; height:46px; border-radius:4px; background:var(--ink); color:var(--cream);
+    border:none; font-size:20px; cursor:pointer; flex-shrink:0;
+  }
+  .error-text{ color:var(--red); font-size:12px; margin-top:8px; }
+
+  /* ---------- assignment list ---------- */
+  .assign-item{
+    display:flex; align-items:center; justify-content:space-between;
+    border:1px solid var(--ink); border-radius:4px; padding:10px; margin-bottom:4px;
+  }
+  .assign-item .left{ display:flex; align-items:center; gap:6px; font-size:14px; }
+  .dot{ width:10px; height:10px; border-radius:50%; border:0.5px solid var(--ink); display:inline-block; }
+  .assign-item button{ background:none; border:none; color:var(--red); font-size:12px; cursor:pointer; }
+
+  /* ---------- race card ---------- */
+  .race-topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    background:rgba(26,16,8,0.92); color:var(--cream); padding:8px 14px;
+    margin:-20px -20px 0; font-family:'Shippori Mincho', serif; font-weight:700; font-size:13px;
+  }
+  .race-topbar .right{ display:flex; align-items:center; gap:10px; font-size:16px; }
+  .race-topbar .count{ font-size:10px; opacity:.7; font-family:'Zen Kaku Gothic New',sans-serif; }
+  .reveal-row{ display:flex; gap:6px; margin:10px 0 4px; }
+  .assign-strip{
+    display:flex; justify-content:space-evenly; flex-wrap:wrap; gap:6px;
+    border:1px solid var(--ink); border-radius:4px; background:rgba(245,240,232,0.9);
+    padding:6px; margin-bottom:10px;
+  }
+  .assign-strip .item{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .assign-strip .box{
+    width:28px; height:28px; border-radius:4px; border:1px solid var(--ink);
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px;
+  }
+  .assign-strip .pname{ font-size:9px; }
+
+  .race-columns{ display:flex; gap:10px; align-items:flex-start; }
+  .race-col{ flex:1; text-align:center; }
+  .race-col h3{
+    font-family:'Shippori Mincho', serif; font-weight:700; font-size:16px; letter-spacing:4px; margin:0 0 6px;
+  }
+  .race-col .cells{
+    border:1px solid var(--ink); border-radius:4px; background:rgba(245,240,232,0.85); padding:6px;
+    display:flex; flex-direction:column; gap:4px;
+  }
+  .scratch-cell{
+    position:relative; width:100%; height:48px; border:1.5px solid var(--ink); border-radius:2px;
+    overflow:hidden; background:var(--cream); user-select:none;
+  }
+  .scratch-cell .value{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Shippori Mincho', serif; font-weight:700; font-size:20px; color:var(--ink);
+  }
+  .scratch-cell .value.small{ font-size:13px; }
+  .scratch-cell canvas{ position:absolute; inset:0; width:100%; height:100%; cursor:pointer; touch-action:none; }
+  .remaining-text{ color:rgba(26,16,8,0.6); font-size:11px; text-align:center; margin:16px 0 20px; }
+
+  /* ---------- result screen ---------- */
+  .result-row{ display:flex; align-items:center; padding:6px 4px; }
+  .result-row.header{ font-weight:700; }
+  .result-row.highlight{ background:var(--tan); }
+  .r-col1{ width:44px; display:flex; align-items:center; gap:3px; font-size:13px; }
+  .r-col2{ flex:1; font-size:13px; }
+  .r-col3{ width:52px; text-align:center; font-size:13px; }
+  .r-col4{ width:52px; text-align:right; font-size:13px; }
+  .r-highlight{ color:var(--red); font-weight:700; }
+  .row-divider{ border:none; border-top:0.5px solid rgba(26,16,8,0.3); margin:0; }
+
+  /* ---------- toast / modal ---------- */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center;
+    z-index:100; padding:20px;
+  }
+  .modal-box{
+    background:var(--cream); border-radius:6px; padding:20px; max-width:340px; width:100%;
+    border:1px solid var(--ink);
+  }
+  .modal-box h4{ margin:0 0 8px; font-size:15px; font-family:'Shippori Mincho', serif; }
+  .modal-box p{ margin:0 0 16px; font-size:12px; color:#444; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:16px; }
+  .modal-actions button{ background:none; border:none; font-size:13px; cursor:pointer; font-weight:700; }
+
+  .finish-text{
+    text-align:center; font-family:'Shippori Mincho', serif; font-weight:800; font-size:20px; color:var(--red);
+    margin-bottom:14px;
+  }
+  ::-webkit-scrollbar{ width:0; height:0; }
+</style>
 </head>
 <body>
-
-<div class="app-container">
-    <div id="screen-settings" class="screen active">
-        <div class="winners-odds-header">
-            <h1>WINNERS & ODDS</h1>
-            <div class="divider-thick"></div>
-        </div>
-        <h2>設定画面</h2>
-        <div class="divider-thin"></div>
-
-        <div class="settings-row">
-            <label>ゲームモード</label>
-            <div class="radio-group">
-                <div class="radio-item">
-                    <input type="radio" id="mode-full" name="gameMode" value="FULL" checked>
-                    <label for="mode-full">フルモード</label>
-                </div>
-                <div class="radio-item">
-                    <input type="radio" id="mode-scratch" name="gameMode" value="SCRATCH">
-                    <label for="mode-scratch">スクラッチ専用</label>
-                </div>
-            </div>
-        </div>
-
-        <div class="settings-row">
-            <label>参加人数（分母）</label>
-            <select id="select-player-count" class="select-input">
-                </select>
-        </div>
-
-        <div class="settings-row">
-            <label>1セットあたりの回戦数（枚数）</label>
-            <select id="select-rounds" class="select-input">
-                <option value="3">3</option>
-                <option value="5" selected>5</option>
-                <option value="10">10</option>
-                <option value="12">12</option>
-            </select>
-        </div>
-
-        <div class="settings-row">
-            <label>総セット数</label>
-            <select id="select-sets" class="select-input">
-                <option value="1" selected>1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-            </select>
-        </div>
-
-        <div class="settings-row" id="row-bet-points">
-            <label>賭け点数（フルモード用）</label>
-            <select id="select-bet" class="select-input">
-                <option value="10" selected>10点</option>
-                <option value="20">20点</option>
-                <option value="30">30点</option>
-                <option value="50">50点</option>
-                <option value="100">100点</option>
-            </select>
-        </div>
-
-        <button id="btn-settings-next" class="btn-dark" style="margin-top:auto;">次へ →</button>
-        <button id="btn-go-colors" class="btn-outline" style="margin-top:10px;">番号の色設定へ</button>
-    </div>
-
-    <div id="screen-players" class="screen">
-        <div class="winners-odds-header">
-            <h1>WINNERS & ODDS</h1>
-            <div class="divider-thick"></div>
-        </div>
-        <h2>プレイヤー登録 (<span id="txt-registered-count">0</span>/<span id="txt-required-count">8</span>)</h2>
-        <div class="divider-thin"></div>
-
-        <div class="player-input-row">
-            <input type="text" id="input-player-name" class="text-input" placeholder="プレイヤー名を入力" maxlength="10">
-            <button id="btn-add-player" class="btn-dark" style="width:70px; height:44px;">追加</button>
-        </div>
-
-        <div class="player-list" id="list-players">
-            </div>
-
-        <button id="btn-players-start" class="btn-dark" style="margin-top:auto;">対戦開始！ →</button>
-        <button id="btn-players-back" class="btn-outline" style="margin-top:10px;">← 戻る</button>
-    </div>
-
-    <div id="screen-assignment" class="screen">
-        <div class="winners-odds-header">
-            <h1>WINNERS & ODDS</h1>
-            <div class="divider-thick"></div>
-        </div>
-        <h2>現在の馬番割当</h2>
-        <div class="divider-thin"></div>
-
-        <p style="font-size:12px; font-weight:bold; margin-bottom:8px;" id="txt-assign-round">1セット目 - 1回戦</p>
-
-        <div class="assignment-box" id="box-assignments">
-            </div>
-
-        <button id="btn-assignment-next" class="btn-dark" style="margin-top:auto;">スクラッチ開始 →</button>
-    </div>
-
-    <div id="screen-race" class="screen">
-        <div class="race-bg-image"></div>
-        
-        <div class="race-content">
-            <div class="race-top-bar">
-                <span id="txt-race-progress">1セット目 - 1回戦</span>
-                <div>
-                    <span id="btn-toggle-sound" style="cursor:pointer; margin-right:8px;">🔊</span>
-                    <span id="txt-round-ratio" style="opacity:0.7; font-size:10px;">1/5</span>
-                    <span id="btn-redo-round" style="cursor:pointer; opacity:0.5; margin-left:8px;">↺</span>
-                </div>
-            </div>
-
-            <div class="action-row-buttons">
-                <button id="btn-reveal-winners" class="btn-mini dark">勝者一発</button>
-                <button id="btn-reveal-all" class="btn-mini accent">両方一発</button>
-                <button id="btn-reveal-odds" class="btn-mini dark">配当一発</button>
-            </div>
-
-            <div id="race-assignment-preview" class="preview-bar"></div>
-
-            <div class="scratch-card-container">
-                <div class="scratch-column">
-                    <h3 style="letter-spacing:4px;">勝 者</h3>
-                    <div id="container-winner-cells" class="cells-wrapper"></div>
-                </div>
-                <div class="scratch-column">
-                    <h3 style="letter-spacing:4px;">配 当</h3>
-                    <div id="container-odds-cells" class="cells-wrapper"></div>
-                </div>
-            </div>
-
-            <div style="margin-top:auto; text-align:center; padding-bottom:10px;">
-                <p id="txt-remaining-msg" style="font-size:11px; opacity:0.6; margin-bottom:10px;">残りマスを削ってください</p>
-                <button id="btn-go-result" class="btn-dark" style="display:none;">結果発表 →</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="screen-result" class="screen">
-        <div class="winners-odds-header">
-            <h1>WINNERS & ODDS</h1>
-            <div class="divider-thick"></div>
-        </div>
-        <h2 id="txt-res-title">1セット目 1回戦 結果</h2>
-        <div class="divider-thin"></div>
-
-        <div class="summary-box">
-            <p id="txt-res-bet-info">賭け点数：--点 分母：--</p>
-            <p class="accent-text" id="txt-res-winners">当選番号：--番</p>
-        </div>
-
-        <h3>今回の結果</h3>
-        <div class="result-table" id="table-current-round"></div>
-
-        <div id="wrapper-ranking" style="display:none;">
-            <h3>累計ランキング</h3>
-            <div class="result-table" id="table-cumulative-ranking"></div>
-        </div>
-
-        <div style="margin-top:auto;" id="box-result-action">
-            </div>
-    </div>
-
-    <div id="screen-result-scratch" class="screen">
-        <div class="winners-odds-header">
-            <h1>WINNERS & ODDS</h1>
-            <div class="divider-thick"></div>
-        </div>
-        <h2 id="txt-scres-title">1セット目 1枚目 結果</h2>
-        <div class="divider-thin"></div>
-
-        <h3>今回の結果</h3>
-        <div id="container-scres-current" style="margin-bottom:14px;"></div>
-
-        <h3 id="txt-scres-history-title">履歴・統計</h3>
-        <p id="txt-scres-progress" style="font-size:12px; margin-bottom:8px;"></p>
-
-        <div class="summary-box">
-            <p>番号別 累計配当合計</p>
-            <div class="stats-grid" id="grid-scratch-stats"></div>
-        </div>
-
-        <div style="margin-top:auto;" id="box-scres-action">
-            </div>
-    </div>
-
-    <div id="screen-colors" class="screen">
-        <div class="winners-odds-header">
-            <h1>WINNERS & ODDS</h1>
-            <div class="divider-thick"></div>
-        </div>
-        <h2>番号の色設定</h2>
-        <div class="divider-thin"></div>
-
-        <h3>① 色を設定する番号を選択</h3>
-        <div class="flex-flow-container" id="grid-color-numbers"></div>
-
-        <div style="display:flex; align-items:center; margin-bottom:16px; font-size:13px;">
-            <span><span id="txt-selected-num">1</span>番の現在の色：</span>
-            <div id="color-preview-dot" class="circle-dot" style="width:28px; height:28px; margin:0 8px;"></div>
-            <button id="btn-reset-color" class="btn-text-accent">リセット</button>
-        </div>
-
-        <h3>② 24色パレットから選択</h3>
-        <div class="flex-flow-container" id="grid-palette-24"></div>
-
-        <button id="btn-toggle-custom" class="btn-outline">▼ カスタム色（RGBで指定）</button>
-        
-        <div id="wrapper-custom-picker" class="custom-picker-section" style="display:none;">
-            <div id="custom-rgb-preview" class="rgb-preview"></div>
-            <div class="rgb-slider-group">
-                <label>R: <span id="val-r">128</span></label>
-                <input type="range" id="slide-r" min="0" max="255" value="128">
-            </div>
-            <div class="rgb-slider-group">
-                <label>G: <span id="val-g">128</span></label>
-                <input type="range" id="slide-g" min="0" max="255" value="128">
-            </div>
-            <div class="rgb-slider-group">
-                <label>B: <span id="val-b">128</span></label>
-                <input type="range" id="slide-b" min="0" max="255" value="128">
-            </div>
-            <button id="btn-apply-custom" class="btn-dark" style="height:44px; font-size:12px;">この色を設定</button>
-        </div>
-
-        <button id="btn-colors-back" class="btn-dark" style="margin-top:auto;">← 設定に戻る</button>
-    </div>
-</div>
+<div id="app"></div>
 
 <script>
-    // --- 0. カラー定数＆初期パレット ---
-    const PALETTE_24 = [
-        "#FF0000", "#FF4500", "#FF8C00", "#FFA500", "#FFD700", "#FFFF00", "#ADFF2F", "#00FF00",
-        "#00FA9A", "#00FFFF", "#00BFFF", "#1E90FF", "#0000FF", "#8A2BE2", "#FF00FF", "#FF1493",
-        "#FF69B4", "#FFFFFF", "#D3D3D3", "#808080", "#404040", "#000000", "#8B4513", "#A0522D"
-    ];
-    
-    const DEFAULT_COLORS = {
-        1: "#FFFFFF", 2: "#000000", 3: "#FF0000", 4: "#0000FF",
-        5: "#FFFF00", 6: "#008000", 7: "#FFA500", 8: "#800080"
-    };
+/* =========================================================
+   カミケバ (WINNERS & ODDS) — Web port
+   Ported from Android/Kotlin Jetpack Compose source
+   ========================================================= */
 
-    // --- 1. 状態管理 (GameState) ---
-    let state = {
-        settings: { mode: "FULL", playerCount: 8, roundsPerSet: 5, setCount: 1, betPoints: 10, soundEnabled: true },
-        savedPlayers: [],
-        assignments: [],
-        currentCard: null,
-        history: [],
-        scratchOnlyHistory: [],
-        currentSet: 1,
-        currentRound: 1,
-        numberColors: { ...DEFAULT_COLORS },
-        isGameFinished: false
-    };
+/* ---------- utils ---------- */
+function randInt(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function hexLuminance(hex){
+  if(!hex) return 0;
+  const c = hex.replace('#','');
+  const r = parseInt(c.substring(0,2),16)/255;
+  const g = parseInt(c.substring(2,4),16)/255;
+  const b = parseInt(c.substring(4,6),16)/255;
+  return 0.2126*r + 0.7152*g + 0.0722*b;
+}
+function textColorFor(hex){ return hexLuminance(hex) > 0.55 ? '#000000' : '#F5F0E8'; }
+function uid(){ return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
-    // 選択中のカスタムカラー対象番号
-    let selectedColorNumber = 1;
+/* ---------- game logic (ported from GameModel.kt) ---------- */
+function fullyRandomOdds(total, count){
+  const result = new Array(count).fill(0);
+  let remaining = total;
+  const order = shuffle([...Array(count).keys()]);
+  for(let i = 0; i < count - 1; i++){
+    const give = randInt(0, remaining);
+    result[order[i]] = give;
+    remaining -= give;
+  }
+  result[order[count-1]] = Math.max(remaining, 0);
+  return result;
+}
+function generateOdds(total, count, minGuaranteeProb, jackpotProb){
+  if(count === 0) return [];
+  const roll = randInt(1, 100);
+  if(roll <= jackpotProb){
+    const result = new Array(count).fill(0);
+    result[randInt(0, count-1)] = total;
+    return result;
+  } else if(roll <= jackpotProb + minGuaranteeProb){
+    if(total < count) return fullyRandomOdds(total, count);
+    const result = new Array(count).fill(1);
+    let remaining = total - count;
+    const order = shuffle([...Array(count).keys()]);
+    for(let i = 0; i < count - 1; i++){
+      const give = randInt(0, remaining);
+      result[order[i]] += give;
+      remaining -= give;
+    }
+    result[order[count-1]] += Math.max(remaining, 0);
+    return result;
+  } else {
+    return fullyRandomOdds(total, count);
+  }
+}
+function generateRaceCard(settings){
+  const n = settings.playerCount;
+  const w = settings.winnerCount;
+  const winnerNumbers = shuffle([...Array(n).keys()].map(i => i+1)).slice(0, w);
+  const odds = generateOdds(n, w, settings.minGuaranteeProbability, settings.jackpotProbability);
+  const cells = [];
+  winnerNumbers.forEach((num, i) => {
+    cells.push({ id: 'w_'+i+'_'+uid(), isWinner: true, rowIndex: i, hiddenValue: String(num), isScratched: false });
+    const o = odds[i];
+    cells.push({ id: 'o_'+i+'_'+uid(), isWinner: false, rowIndex: i, hiddenValue: o === 0 ? '0' : (o + '/' + n), isScratched: false });
+  });
+  return { cells, denominator: n };
+}
+function winnerCells(card){ return card.cells.filter(c => c.isWinner).sort((a,b) => a.rowIndex - b.rowIndex); }
+function oddsCells(card){ return card.cells.filter(c => !c.isWinner).sort((a,b) => a.rowIndex - b.rowIndex); }
+function allScratched(card){ return card.cells.every(c => c.isScratched); }
 
-    // --- 2. スクラッチデータ生成アルゴリズム (ScratchCardGenerator) ---
-    function generateScratchCard(denominator) {
-        let winnerNumbers = [];
-        let oddsValues = [];
+function calcResults(assignments, card, betPoints){
+  const n = card.denominator;
+  const wc = winnerCells(card), oc = oddsCells(card);
+  const results = assignments.map(a => {
+    const win = wc.find(c => c.hiddenValue === String(a.number));
+    if(win){
+      const oddsCell = oc.find(c => c.rowIndex === win.rowIndex);
+      const oddsStr = oddsCell ? oddsCell.hiddenValue : '0';
+      const numerator = oddsStr === '0' ? 0 : parseInt(oddsStr.split('/')[0], 10);
+      return { playerName: a.playerName, number: a.number, isWinner: true, oddsNumerator: numerator, denominator: n, score: numerator * betPoints };
+    }
+    return { playerName: a.playerName, number: a.number, isWinner: false, oddsNumerator: 0, denominator: n, score: 0 };
+  });
+  results.sort((a,b) => b.score - a.score);
+  return results;
+}
+function oddsDisplay(r){ return r.oddsNumerator === 0 ? '0' : (r.oddsNumerator + '/' + r.denominator); }
 
-        // 1. 当選個数の決定 (85%で1個、15%で2個)
-        let winnerCount = Math.random() < 0.85 ? 1 : 2;
-        let pool = Array.from({ length: denominator }, (_, i) => i + 1);
-        
-        // 当選番号の抽選
-        for (let i = 0; i < winnerCount; i++) {
-            let idx = Math.floor(Math.random() * pool.length);
-            winnerNumbers.push(pool.splice(idx, 1)[0]);
-        }
+function randomAssign(players, playerCount, allowDuplicate){
+  if(players.length === 0) return [];
+  const result = [];
+  const numbers = shuffle([...Array(playerCount).keys()].map(i => i+1));
+  const shuffledPlayers = shuffle(players);
+  if(allowDuplicate){
+    numbers.forEach(num => {
+      const p = shuffledPlayers[randInt(0, shuffledPlayers.length - 1)];
+      result.push({ playerId: p.id, playerName: p.name, number: num });
+    });
+  } else {
+    numbers.forEach((num, i) => {
+      const p = shuffledPlayers[i % shuffledPlayers.length];
+      result.push({ playerId: p.id, playerName: p.name, number: num });
+    });
+  }
+  return result;
+}
 
-        // 2. 配当分子の決定 (0〜denominator-1)
-        for (let i = 0; i < winnerCount; i++) {
-            oddsValues.push(Math.floor(Math.random() * denominator));
-        }
+/* ---------- 24 color palette (from NumberColorScreen.kt) ---------- */
+const PALETTE_24 = [
+  "#FF0000","#FF4500","#FF8C00","#FFA500",
+  "#FFD700","#FFFF00","#ADFF2F","#00FF00",
+  "#00FA9A","#00FFFF","#00BFFF","#1E90FF",
+  "#0000FF","#8A2BE2","#FF00FF","#FF1493",
+  "#FF69B4","#FFFFFF","#D3D3D3","#808080",
+  "#404040","#000000","#8B4513","#A0522D"
+];
 
-        // 3. マス目(Cell)の構築
-        let cells = [];
-        let idCounter = 0;
+/* ---------- state (mirrors GameState / GameViewModel, in-memory only) ---------- */
+let state = {
+  settings: {
+    mode: 'FULL', playerCount: 8, winnerCount: 3, setCount: 10, roundsPerSet: 30,
+    betPoints: 1, soundEnabled: true, minGuaranteeProbability: 80, jackpotProbability: 5,
+    allowDuplicateNumbers: false
+  },
+  savedPlayers: [],       // {id, name}
+  activePlayerIds: [],
+  assignments: [],        // {playerId, playerName, number}
+  currentSet: 1,
+  currentRound: 1,
+  currentCard: null,
+  history: [],             // RoundHistory
+  scratchOnlyHistory: [],  // ScratchOnlyHistory
+  numberColors: {}         // number -> hex
+};
+let nextPlayerId = 1;
+let screen = 'settings';
 
-        // 勝者セル (4マス)
-        for (let i = 0; i < 4; i++) {
-            let val = (i < winnerNumbers.length) ? `${winnerNumbers[i]}` : `${winnerNumbers[0]}`;
-            if (i === 3 && winnerNumbers.length === 2 && Math.random() < 0.5) {
-                val = `${winnerNumbers[1]}`;
-            }
-            cells.push({ id: `w_${idCounter++}`, type: "WINNER", hiddenValue: val, isScratched: false });
-        }
-        // シャッフル
-        cells.sort(() => Math.random() - 0.5);
-        let winnerCells = [...cells];
+function activePlayers(){ return state.savedPlayers.filter(p => state.activePlayerIds.includes(p.id)); }
+function totalRounds(){ return state.settings.setCount * state.settings.roundsPerSet; }
+function completedRounds(){ return state.history.length; }
+function isGameFinished(){ return completedRounds() >= totalRounds(); }
+function progressText(){ return state.currentSet + 'セット目　' + state.currentRound + '回戦'; }
+function scratchProgress(){
+  const done = state.scratchOnlyHistory.filter(h => h.setNumber === state.currentSet).length;
+  return state.currentSet + 'セット目　' + done + '/' + state.settings.roundsPerSet + '枚';
+}
 
-        // 配当セル (4マス)
-        let oddsCells = [];
-        for (let i = 0; i < 4; i++) {
-            let val = (i < oddsValues.length) ? (oddsValues[i] === 0 ? "0" : `${oddsValues[i]}/${denominator}`) : (oddsValues[0] === 0 ? "0" : `${oddsValues[0]}/${denominator}`);
-            oddsCells.push({ id: `o_${idCounter++}`, type: "ODDS", hiddenValue: val, isScratched: false });
-        }
-        oddsCells.sort(() => Math.random() - 0.5);
+function getTotalScores(){
+  return activePlayers().map(p => {
+    const total = state.history.reduce((sum, round) =>
+      sum + round.results.filter(r => r.playerName === p.name).reduce((s,r) => s + r.score, 0), 0);
+    return [p.name, total];
+  }).sort((a,b) => b[1] - a[1]);
+}
+function getScratchStats(){
+  const stats = {};
+  state.scratchOnlyHistory.forEach(h => {
+    h.winnerNumbers.forEach((num, i) => {
+      const odds = h.oddsValues[i] || 0;
+      stats[num] = (stats[num] || 0) + odds;
+    });
+  });
+  return stats;
+}
 
-        return {
-            winnerNumbers,
-            oddsValues,
-            denominator,
-            winnerCells,
-            oddsCells,
-            cells: [...winnerCells, ...oddsCells]
-        };
+/* ---------- actions ---------- */
+function addPlayerName(name){
+  name = name.trim();
+  if(!name) return;
+  state.savedPlayers.push({ id: nextPlayerId++, name });
+}
+function removePlayerName(id){
+  state.savedPlayers = state.savedPlayers.filter(p => p.id !== id);
+  state.activePlayerIds = state.activePlayerIds.filter(pid => pid !== id);
+}
+function toggleActivePlayer(id){
+  if(state.activePlayerIds.includes(id)) state.activePlayerIds = state.activePlayerIds.filter(pid => pid !== id);
+  else state.activePlayerIds.push(id);
+}
+function assignNumberToPlayer(playerId, playerName, number){
+  const allowDup = state.settings.allowDuplicateNumbers;
+  let base = allowDup ? state.assignments : state.assignments.filter(a => a.number !== number);
+  const already = base.some(a => a.playerId === playerId && a.number === number);
+  if(!already) base = base.concat([{ playerId, playerName, number }]);
+  state.assignments = base;
+}
+function unassignNumber(number){ state.assignments = state.assignments.filter(a => a.number !== number); }
+function assignRandom(){ state.assignments = randomAssign(activePlayers(), state.settings.playerCount, state.settings.allowDuplicateNumbers); }
+function startRound(){ state.currentCard = generateRaceCard(state.settings); }
+function redoCurrentRound(){ state.currentCard = generateRaceCard(state.settings); }
+function scratchCellById(cellId){
+  if(!state.currentCard) return;
+  state.currentCard.cells = state.currentCard.cells.map(c => c.id === cellId && !c.isScratched ? {...c, isScratched:true} : c);
+}
+function revealAllWinnerCells(){ if(!state.currentCard) return; state.currentCard.cells = state.currentCard.cells.map(c => c.isWinner ? {...c, isScratched:true} : c); }
+function revealAllOddsCells(){ if(!state.currentCard) return; state.currentCard.cells = state.currentCard.cells.map(c => !c.isWinner ? {...c, isScratched:true} : c); }
+function revealAllCells(){ if(!state.currentCard) return; state.currentCard.cells = state.currentCard.cells.map(c => ({...c, isScratched:true})); }
+
+function completeRound(){
+  const card = state.currentCard; if(!card) return;
+  const results = calcResults(state.assignments, card, state.settings.betPoints);
+  const wNums = winnerCells(card).map(c => parseInt(c.hiddenValue, 10));
+  const oddsMap = {};
+  winnerCells(card).forEach(wc => {
+    const num = parseInt(wc.hiddenValue, 10);
+    const oc = oddsCells(card).find(c => c.rowIndex === wc.rowIndex);
+    const str = oc ? oc.hiddenValue : '0';
+    oddsMap[num] = str === '0' ? 0 : parseInt(str.split('/')[0], 10);
+  });
+  state.history.push({ setNumber: state.currentSet, roundNumber: state.currentRound, winnerNumbers: wNums, oddsMap, denominator: state.settings.playerCount, results });
+  const nextRound = state.currentRound + 1;
+  if(nextRound > state.settings.roundsPerSet){ state.currentSet += 1; state.currentRound = 1; }
+  else state.currentRound = nextRound;
+  state.currentCard = null;
+  state.assignments = [];
+}
+function completeScratchOnly(){
+  const card = state.currentCard; if(!card) return;
+  const wNums = winnerCells(card).map(c => parseInt(c.hiddenValue, 10));
+  const oddsValues = oddsCells(card).map(c => c.hiddenValue === '0' ? 0 : parseInt(c.hiddenValue.split('/')[0], 10));
+  const currentCount = state.scratchOnlyHistory.filter(h => h.setNumber === state.currentSet).length + 1;
+  state.scratchOnlyHistory.push({ setNumber: state.currentSet, scratchNumber: currentCount, winnerNumbers: wNums, oddsValues, denominator: state.settings.playerCount });
+  if(currentCount >= state.settings.roundsPerSet) state.currentSet += 1;
+  state.currentCard = null;
+}
+function toggleSound(){ state.settings.soundEnabled = !state.settings.soundEnabled; }
+function setNumberColor(num, hex){ state.numberColors[num] = hex; }
+function resetNumberColor(num){ delete state.numberColors[num]; }
+function resetAll(){
+  const saved = state.savedPlayers, colors = state.numberColors, allowDup = state.settings.allowDuplicateNumbers;
+  state = {
+    settings: { mode:'FULL', playerCount:8, winnerCount:3, setCount:10, roundsPerSet:30, betPoints:1, soundEnabled:true, minGuaranteeProbability:80, jackpotProbability:5, allowDuplicateNumbers: allowDup },
+    savedPlayers: saved, activePlayerIds: [], assignments: [], currentSet:1, currentRound:1, currentCard:null,
+    history: [], scratchOnlyHistory: [], numberColors: colors
+  };
+}
+
+/* ---------- render helpers ---------- */
+const app = document.getElementById('app');
+function el(html){ const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
+function h(tag, attrs, children){
+  const e = document.createElement(tag);
+  if(attrs) for(const k in attrs){
+    if(k === 'class') e.className = attrs[k];
+    else if(k.startsWith('on')) e.addEventListener(k.slice(2), attrs[k]);
+    else if(k === 'html') e.innerHTML = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  (children||[]).forEach(c => { if(c) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+  return e;
+}
+function headerStamp(){
+  return h('div', {class:'header-wrap'}, [
+    h('div', {class:'header-title serif'}, ['WINNERS & ODDS']),
+    h('hr', {class:'header-divider'})
+  ]);
+}
+function settingRow(label, value, min, max, unit, onMinus, onPlus){
+  const row = h('div', {class:'setting-row'});
+  row.appendChild(h('div', {class:'setting-label'}, [label]));
+  const stepper = h('div', {class:'stepper'});
+  const minusBtn = h('button', { onclick:()=>{ onMinus(); render(); } }, ['－']);
+  if(value<=min) minusBtn.disabled = true;
+  const plusBtn = h('button', { onclick:()=>{ onPlus(); render(); } }, ['＋']);
+  if(value>=max) plusBtn.disabled = true;
+  stepper.appendChild(minusBtn);
+  stepper.appendChild(h('div', {class:'val'}, [value + ' ' + unit]));
+  stepper.appendChild(plusBtn);
+  row.appendChild(stepper);
+  return row;
+}
+function toggleRow(label, sub, checked, onChange){
+  const row = h('div', {class:'toggle-row'});
+  const left = h('div', {}, [h('div', {class:'setting-label'}, [label])]);
+  if(sub) left.appendChild(h('div', {class:'sub'}, [sub]));
+  row.appendChild(left);
+  const right = h('div', {style:'display:flex;align-items:center;'});
+  const labelSpan = h('span', {class:'switch-label', style: checked ? 'color:#8B1A1A' : 'color:#888'}, [checked ? 'ON' : 'OFF']);
+  right.appendChild(labelSpan);
+  const sw = h('label', {class:'switch'});
+  const input = h('input', {type:'checkbox'});
+  input.checked = checked;
+  input.addEventListener('change', () => { onChange(input.checked); render(); });
+  sw.appendChild(input);
+  sw.appendChild(h('span', {class:'track'}));
+  right.appendChild(sw);
+  row.appendChild(right);
+  return row;
+}
+function resultRow(col1, col2, col3, col4, opts){
+  opts = opts || {};
+  const row = h('div', {class:'result-row' + (opts.header ? ' header':'') + (opts.highlight ? ' highlight':'')});
+  const c1 = h('div', {class:'r-col1' + (opts.highlight?' r-highlight':'')});
+  if(opts.dotColor){ c1.appendChild(h('span', {class:'dot', style:'background:'+opts.dotColor})); c1.appendChild(document.createTextNode(' ')); }
+  c1.appendChild(document.createTextNode(col1));
+  row.appendChild(c1);
+  row.appendChild(h('div', {class:'r-col2'+(opts.highlight?' r-highlight':'')}, [col2]));
+  row.appendChild(h('div', {class:'r-col3'+(opts.highlight?' r-highlight':'')}, [col3]));
+  row.appendChild(h('div', {class:'r-col4'+(opts.highlight?' r-highlight':'')}, [col4]));
+  return row;
+}
+function showModal(title, message, confirmLabel, onConfirm){
+  const backdrop = h('div', {class:'modal-backdrop'});
+  const box = h('div', {class:'modal-box'});
+  box.appendChild(h('h4', {}, [title]));
+  box.appendChild(h('p', {}, [message]));
+  const actions = h('div', {class:'modal-actions'});
+  actions.appendChild(h('button', {style:'color:#8B1A1A', onclick:()=>{ onConfirm(); backdrop.remove(); render(); }}, [confirmLabel]));
+  actions.appendChild(h('button', {style:'color:#1A1008', onclick:()=>backdrop.remove()}, ['キャンセル']));
+  box.appendChild(actions);
+  backdrop.appendChild(box);
+  document.body.appendChild(backdrop);
+}
+
+/* ---------- scratch cell (canvas scratch effect) ---------- */
+function buildScratchCell(cell){
+  const wrap = h('div', {class:'scratch-cell'});
+  const isSmallText = cell.hiddenValue.includes('/');
+  wrap.appendChild(h('div', {class:'value' + (isSmallText?' small':'')}, [cell.hiddenValue]));
+  if(cell.isScratched) return wrap;
+
+  const canvas = document.createElement('canvas');
+  wrap.appendChild(canvas);
+
+  let ctx, revealed = false, points = 0, dragging = false, clickCount = 0, clickTimer = null;
+
+  function setupCanvas(){
+    const rect = wrap.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.round(rect.width));
+    canvas.height = Math.max(1, Math.round(rect.height));
+    ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#9E9E9E';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  requestAnimationFrame(setupCanvas);
+
+  function reveal(){
+    if(revealed) return;
+    revealed = true;
+    canvas.style.transition = 'opacity .18s ease';
+    canvas.style.opacity = '0';
+    setTimeout(() => canvas.remove(), 180);
+    scratchCellById(cell.id);
+    checkAllScratchedAndUpdateFooter();
+  }
+  function scratchAt(x, y){
+    if(!ctx) return;
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.arc(x, y, 13, 0, Math.PI*2);
+    ctx.fill();
+    points++;
+    if(points > 16) reveal();
+  }
+  function getPos(e){
+    const rect = canvas.getBoundingClientRect();
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    return [cx, cy];
+  }
+  canvas.addEventListener('pointerdown', (e) => {
+    if(revealed) return;
+    dragging = true;
+    const [x,y] = getPos(e);
+    scratchAt(x, y);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if(revealed || !dragging) return;
+    const [x,y] = getPos(e);
+    scratchAt(x, y);
+  });
+  window.addEventListener('pointerup', () => {
+    if(!dragging) return;
+    dragging = false;
+    if(points <= 1){
+      clickCount++;
+      if(clickTimer) clearTimeout(clickTimer);
+      if(clickCount >= 2) reveal();
+      else clickTimer = setTimeout(() => { clickCount = 0; }, 500);
+    }
+  });
+  return wrap;
+}
+function checkAllScratchedAndUpdateFooter(){
+  const footer = document.getElementById('race-footer');
+  if(!footer || !state.currentCard) return;
+  const remaining = state.currentCard.cells.filter(c => !c.isScratched).length;
+  footer.innerHTML = '';
+  const isScratchMode = state.settings.mode === 'SCRATCH';
+  if(remaining > 0){
+    footer.appendChild(h('div', {class:'remaining-text'}, ['残り ' + remaining + ' マス　タップまたはスワイプで削れます']));
+  } else {
+    const btn = h('button', {class:'btn btn-ink', style:'margin:0 20px; width:calc(100% - 40px);', onclick: () => {
+      if(isScratchMode) completeScratchOnly(); else completeRound();
+      screen = isScratchMode ? 'scratchResult' : 'result';
+      render();
+    }}, ['結果発表 →']);
+    const box = h('div', {style:'padding:0 0 18px;'});
+    box.appendChild(btn);
+    footer.appendChild(box);
+  }
+}
+
+/* =========================================================
+   SCREENS
+   ========================================================= */
+
+function renderSettings(){
+  const s = state.settings;
+  const c = h('div', {class:'screen'});
+  c.appendChild(headerStamp());
+  c.appendChild(h('div', {class:'screen-title serif'}, ['ゲーム設定']));
+  c.appendChild(h('hr', {class:'thin-divider'}));
+
+  c.appendChild(settingRow('参加人数', s.playerCount, 2, 30, '人',
+    () => { if(s.playerCount>2){ s.playerCount--; if(s.winnerCount>=s.playerCount) s.winnerCount = s.playerCount-1; } },
+    () => { if(s.playerCount<30) s.playerCount++; if(s.winnerCount>=s.playerCount) s.winnerCount=s.playerCount-1; }));
+  c.appendChild(document.createElement('div')).style.height='0px';
+  c.appendChild(settingRow('勝者数', s.winnerCount, 1, s.playerCount-1, '名',
+    () => { if(s.winnerCount>1) s.winnerCount--; },
+    () => { if(s.winnerCount<s.playerCount-1) s.winnerCount++; }));
+
+  c.appendChild(h('div', {class:'info-box'}, [
+    '配当：合計' + s.playerCount + 'ポイントを勝者' + s.winnerCount + '名で分配\n得点 ＝ 配当分子 × 賭け点数'
+  ]));
+
+  c.appendChild(settingRow('賭け点数（一律）', s.betPoints, 1, 99, '点', ()=>{if(s.betPoints>1)s.betPoints--;}, ()=>{if(s.betPoints<99)s.betPoints++;}));
+  c.appendChild(settingRow('セット数', s.setCount, 1, 99, 'セット', ()=>{if(s.setCount>1)s.setCount--;}, ()=>{if(s.setCount<99)s.setCount++;}));
+  c.appendChild(settingRow('1セット回戦数', s.roundsPerSet, 1, 99, '回戦', ()=>{if(s.roundsPerSet>1)s.roundsPerSet--;}, ()=>{if(s.roundsPerSet<99)s.roundsPerSet++;}));
+  c.appendChild(h('div', {style:'text-align:right; font-size:12px; color:#8B1A1A; font-weight:700; margin:4px 0 10px;'}, ['総回戦数：' + (s.setCount*s.roundsPerSet) + '回']));
+
+  c.appendChild(toggleRow('番号かぶりあり', '同じ番号を複数人が持てる', s.allowDuplicateNumbers, (v)=>{ s.allowDuplicateNumbers = v; }));
+  c.appendChild(toggleRow('効果音', null, s.soundEnabled, (v)=>{ s.soundEnabled = v; }));
+
+  let showAdvanced = state._showAdvanced || false;
+  const advToggle = h('button', {class:'btn-outline', style:'margin-bottom:8px;', onclick: ()=>{ state._showAdvanced = !showAdvanced; render(); }},
+    [showAdvanced ? '▲ 詳細設定を閉じる' : '▼ 詳細設定']);
+  c.appendChild(advToggle);
+  if(showAdvanced){
+    const box = h('div', {class:'advanced-box'});
+    box.appendChild(h('h4', {class:'serif'}, ['配当バランス調整']));
+    box.appendChild(h('div', {class:'slider-label'}, ['最低1点保証になる確率：' + s.minGuaranteeProbability + '%']));
+    const r1 = h('input', {type:'range', min:0, max:100, value:s.minGuaranteeProbability});
+    r1.addEventListener('input', (e)=>{ s.minGuaranteeProbability = parseInt(e.target.value,10); box.querySelector('.mg-label').textContent = '最低1点保証になる確率：' + s.minGuaranteeProbability + '%'; box.querySelector('.rest-label').textContent = '残り' + Math.max(100-s.minGuaranteeProbability-s.jackpotProbability,0) + '%は完全ランダム（0配当あり）'; });
+    box.querySelector('.slider-label').classList.add('mg-label');
+    box.appendChild(r1);
+    const jLabel = h('div', {class:'slider-label'}, ['一人勝ちになる確率：' + s.jackpotProbability + '%']);
+    box.appendChild(jLabel);
+    const r2 = h('input', {type:'range', min:0, max:100, value:s.jackpotProbability});
+    r2.addEventListener('input', (e)=>{ s.jackpotProbability = parseInt(e.target.value,10); jLabel.textContent = '一人勝ちになる確率：' + s.jackpotProbability + '%'; box.querySelector('.rest-label').textContent = '残り' + Math.max(100-s.minGuaranteeProbability-s.jackpotProbability,0) + '%は完全ランダム（0配当あり）'; });
+    box.appendChild(r2);
+    box.appendChild(h('div', {class:'rest-label', style:'font-size:11px;color:#888;'}, ['残り' + Math.max(100-s.minGuaranteeProbability-s.jackpotProbability,0) + '%は完全ランダム（0配当あり）']));
+    c.appendChild(box);
+  }
+
+  c.appendChild(h('button', {class:'btn-outline', style:'margin-bottom:10px;', onclick: () => { screen='colorSetting'; render(); }}, ['🎨 番号の色を設定']));
+
+  c.appendChild(h('div', {style:'height:10px;'}));
+  c.appendChild(h('button', {class:'btn btn-ink serif', style:'margin-bottom:10px;', onclick: () => {
+    s.mode = 'FULL';
+    screen = 'playerSelect';
+    render();
+  }}, ['🏇 フルモード']));
+  c.appendChild(h('button', {class:'btn btn-brown serif', onclick: () => {
+    s.mode = 'SCRATCH';
+    startRound();
+    screen = 'race';
+    render();
+  }}, ['🎰 スクラッチ専用モード']));
+
+  return c;
+}
+
+function renderColorSetting(){
+  const c = h('div', {class:'screen'});
+  const n = state.settings.playerCount;
+  state._selectedNumber = state._selectedNumber || 1;
+  let selectedNumber = state._selectedNumber;
+
+  c.appendChild(headerStamp());
+  c.appendChild(h('div', {class:'screen-title serif'}, ['番号の色設定']));
+  c.appendChild(h('hr', {class:'thin-divider'}));
+
+  c.appendChild(h('div', {style:'font-size:13px;font-weight:700;margin-bottom:8px;'}, ['① 色を設定する番号を選択']));
+  const grid = h('div', {class:'flow-row', style:'margin-bottom:20px;'});
+  for(let num=1; num<=n; num++){
+    const hex = state.numberColors[num];
+    const bg = hex || '#E8DFD0';
+    const isSel = selectedNumber === num;
+    const circle = h('button', {class:'num-circle', style:'background:'+bg+'; color:'+textColorFor(hex||'#E8DFD0')+'; border:'+(isSel?'3px solid #8B1A1A':'1px solid #1A1008')+';',
+      onclick: () => { state._selectedNumber = num; render(); }}, [String(num)]);
+    grid.appendChild(circle);
+  }
+  c.appendChild(grid);
+
+  const currentHex = state.numberColors[selectedNumber];
+  const currentRow = h('div', {style:'display:flex;align-items:center;margin-bottom:16px;'});
+  currentRow.appendChild(h('span', {style:'font-size:13px;'}, [selectedNumber + '番の現在の色：']));
+  currentRow.appendChild(h('span', {style:'display:inline-block;width:28px;height:28px;border-radius:50%;margin-left:8px;background:'+(currentHex||'#1A1008')+';border:1px solid #1A1008;'}));
+  if(currentHex){
+    currentRow.appendChild(h('button', {style:'background:none;border:none;color:#8B1A1A;font-size:12px;margin-left:8px;cursor:pointer;', onclick: () => { resetNumberColor(selectedNumber); render(); }}, ['リセット']));
+  }
+  c.appendChild(currentRow);
+
+  c.appendChild(h('div', {style:'font-size:13px;font-weight:700;margin-bottom:8px;'}, ['② 24色パレットから選択']));
+  const pal = h('div', {class:'flow-row', style:'margin-bottom:20px;'});
+  PALETTE_24.forEach(hex => {
+    pal.appendChild(h('button', {style:'width:36px;height:36px;border-radius:50%;background:'+hex+';border:1.5px solid #1A1008;cursor:pointer;',
+      onclick: () => { setNumberColor(selectedNumber, hex); render(); }}));
+  });
+  c.appendChild(pal);
+
+  state._showCustom = state._showCustom || false;
+  c.appendChild(h('button', {class:'btn-outline', onclick: () => { state._showCustom = !state._showCustom; render(); }},
+    [state._showCustom ? '▲ カスタム色を閉じる' : '▼ カスタム色（RGBで指定）']));
+
+  if(state._showCustom){
+    state._customR = state._customR ?? 128;
+    state._customG = state._customG ?? 128;
+    state._customB = state._customB ?? 128;
+    const box = h('div', {style:'margin-top:12px;'});
+    const preview = h('div', {style:'width:100%;height:48px;border-radius:8px;border:1px solid #1A1008;margin-bottom:8px;'});
+    function hexOf(){ return '#' + [state._customR,state._customG,state._customB].map(v => Math.round(v).toString(16).padStart(2,'0').toUpperCase()).join(''); }
+    function updatePreview(){ preview.style.background = 'rgb('+state._customR+','+state._customG+','+state._customB+')'; applyBtn.textContent = 'この色（'+hexOf()+'）を'+selectedNumber+'番に設定'; applyBtn.style.background = hexOf(); applyBtn.style.color = textColorFor(hexOf()); }
+    box.appendChild(preview);
+    box.appendChild(h('div', {style:'font-size:12px;'}, ['R: ' + state._customR]));
+    const rr = h('input', {type:'range', min:0, max:255, value:state._customR});
+    rr.style.accentColor = 'red';
+    rr.addEventListener('input', e => { state._customR = parseInt(e.target.value,10); box.childNodes[1].textContent = 'R: '+state._customR; updatePreview(); });
+    box.appendChild(rr);
+    box.appendChild(h('div', {style:'font-size:12px;'}, ['G: ' + state._customG]));
+    const rg = h('input', {type:'range', min:0, max:255, value:state._customG});
+    rg.style.accentColor = 'green';
+    rg.addEventListener('input', e => { state._customG = parseInt(e.target.value,10); box.childNodes[3].textContent = 'G: '+state._customG; updatePreview(); });
+    box.appendChild(rg);
+    box.appendChild(h('div', {style:'font-size:12px;'}, ['B: ' + state._customB]));
+    const rb = h('input', {type:'range', min:0, max:255, value:state._customB});
+    rb.style.accentColor = 'blue';
+    rb.addEventListener('input', e => { state._customB = parseInt(e.target.value,10); box.childNodes[5].textContent = 'B: '+state._customB; updatePreview(); });
+    box.appendChild(rb);
+    const applyBtn = h('button', {class:'btn', style:'margin-top:8px;font-size:12px;height:44px;', onclick: () => { setNumberColor(selectedNumber, hexOf()); render(); }},
+      ['この色（'+hexOf()+'）を'+selectedNumber+'番に設定']);
+    box.appendChild(applyBtn);
+    updatePreview();
+    c.appendChild(box);
+  }
+
+  c.appendChild(h('div', {style:'height:24px;'}));
+  c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { screen='settings'; render(); }}, ['← 設定に戻る']));
+  return c;
+}
+
+function renderPlayerSelect(){
+  const c = h('div', {class:'screen'});
+  c.appendChild(headerStamp());
+  c.appendChild(h('div', {class:'screen-title serif'}, ['参加者選択']));
+  c.appendChild(h('hr', {class:'thin-divider'}));
+  c.appendChild(h('div', {style:'font-size:12px;'}, ['タップして参加者を選択（' + state.activePlayerIds.length + '/' + state.settings.playerCount + '人）']));
+
+  const inputRow = h('div', {class:'input-row'});
+  const input = h('input', {type:'text', placeholder:'新しい名前'});
+  inputRow.appendChild(input);
+  const addBtn = h('button', {class:'icon-btn', onclick: () => { addPlayerName(input.value); render(); }}, ['＋']);
+  input.addEventListener('keydown', (e) => { if(e.key==='Enter'){ addPlayerName(input.value); render(); } });
+  inputRow.appendChild(addBtn);
+  c.appendChild(inputRow);
+
+  if(state._playerError){
+    c.appendChild(h('div', {class:'error-text'}, [state._playerError]));
+  }
+
+  const grid = h('div', {class:'player-grid'});
+  state.savedPlayers.forEach(p => {
+    const isSel = state.activePlayerIds.includes(p.id);
+    const card = h('div', {class:'player-card' + (isSel?' selected':''), onclick: () => { toggleActivePlayer(p.id); render(); }});
+    card.appendChild(h('span', {class:'name'}, [p.name]));
+    const delBtn = h('button', {onclick: (e) => { e.stopPropagation(); removePlayerName(p.id); render(); }}, ['✕']);
+    card.appendChild(delBtn);
+    grid.appendChild(card);
+  });
+  c.appendChild(grid);
+
+  c.appendChild(h('div', {style:'height:16px;'}));
+  c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => {
+    if(state.activePlayerIds.length < 2){ state._playerError = '2人以上選んでください'; }
+    else { state._playerError = ''; screen = 'assign'; }
+    render();
+  }}, ['番号割当へ →']));
+  return c;
+}
+
+function renderAssign(){
+  const c = h('div', {class:'screen'});
+  const players = activePlayers();
+  const n = state.settings.playerCount;
+  state._selectedPlayerId = state._selectedPlayerId ?? null;
+
+  c.appendChild(headerStamp());
+  c.appendChild(h('div', {class:'screen-title serif'}, ['番号札の割当']));
+  c.appendChild(h('hr', {class:'thin-divider'}));
+
+  c.appendChild(h('button', {class:'btn btn-green', style:'height:44px;margin-bottom:16px;', onclick: () => { assignRandom(); render(); }}, ['🎲 ランダムで割当']));
+
+  c.appendChild(h('div', {style:'font-size:13px;font-weight:700;margin-bottom:6px;'}, ['① 名前を選択（1人で複数枚OK）']));
+  const chipRow = h('div', {class:'flow-row'});
+  players.forEach(p => {
+    const myNumbers = state.assignments.filter(a => a.playerId === p.id).map(a => a.number).sort((a,b)=>a-b);
+    const isSelected = state._selectedPlayerId === p.id;
+    const label = myNumbers.length ? p.name + ' (' + myNumbers.join(',') + ')' : p.name;
+    const cls = isSelected ? 'chip selected' : (myNumbers.length ? 'chip filled' : 'chip');
+    chipRow.appendChild(h('div', {class:cls, onclick: () => { state._selectedPlayerId = isSelected ? null : p.id; render(); }}, [label]));
+  });
+  c.appendChild(chipRow);
+  if(state._selectedPlayerId !== null){
+    c.appendChild(h('div', {style:'font-size:11px;color:#8B1A1A;margin-top:6px;'}, ['↓ 番号をタップして追加（複数選べます）']));
+  }
+
+  c.appendChild(h('div', {style:'height:20px;'}));
+  c.appendChild(h('div', {style:'font-size:13px;font-weight:700;margin-bottom:6px;'}, ['② 番号を選択']));
+  const numRow = h('div', {class:'flow-row'});
+  for(let num=1; num<=n; num++){
+    const takenBy = state.assignments.filter(a => a.number === num);
+    const isTaken = takenBy.length > 0 && !state.settings.allowDuplicateNumbers;
+    const hex = state.numberColors[num];
+    const baseColor = hex || '#1A1008';
+    const displayColor = isTaken ? '#9e9e9e' : baseColor;
+    const enabled = state._selectedPlayerId !== null && (!isTaken || state.settings.allowDuplicateNumbers);
+    const circle = h('button', {class:'num-circle' + (enabled?'':' disabled'), style:'background:'+displayColor+';color:'+textColorFor(displayColor)+';',
+      onclick: () => {
+        if(!enabled) return;
+        const pid = state._selectedPlayerId;
+        const player = players.find(p => p.id === pid);
+        if(!player) return;
+        assignNumberToPlayer(pid, player.name, num);
+        render();
+      }}, [String(num)]);
+    numRow.appendChild(circle);
+  }
+  c.appendChild(numRow);
+
+  c.appendChild(h('div', {style:'height:20px;'}));
+  c.appendChild(h('div', {style:'font-size:13px;font-weight:700;margin-bottom:6px;'}, ['現在の割当（' + state.assignments.length + '/' + n + '）']));
+  state.assignments.slice().sort((a,b)=>a.number-b.number).forEach(a => {
+    const hex = state.numberColors[a.number];
+    const row = h('div', {class:'assign-item'});
+    const left = h('div', {class:'left'});
+    if(hex) left.appendChild(h('span', {class:'dot', style:'background:'+hex}));
+    left.appendChild(document.createTextNode(a.number + '番　' + a.playerName));
+    row.appendChild(left);
+    row.appendChild(h('button', {onclick: () => { unassignNumber(a.number); render(); }}, ['解除']));
+    c.appendChild(row);
+  });
+
+  c.appendChild(h('div', {style:'height:20px;'}));
+  const startBtn = h('button', {class:'btn btn-ink serif', onclick: () => { startRound(); screen='race'; render(); }}, ['レース開始！ →']);
+  if(state.assignments.length !== n) startBtn.disabled = true;
+  c.appendChild(startBtn);
+  return c;
+}
+
+function renderRace(){
+  const c = h('div', {class:'screen'});
+  const card = state.currentCard;
+  const isScratchMode = state.settings.mode === 'SCRATCH';
+
+  const topbar = h('div', {class:'race-topbar'});
+  topbar.appendChild(h('div', {}, [isScratchMode ? scratchProgress() : progressText()]));
+  const right = h('div', {class:'right'});
+  right.appendChild(h('span', {style:'cursor:pointer;', onclick: () => { toggleSound(); render(); }}, [state.settings.soundEnabled ? '🔊' : '🔇']));
+  if(!isScratchMode){
+    right.appendChild(h('span', {class:'count'}, [completedRounds() + '/' + totalRounds()]));
+  }
+  right.appendChild(h('span', {style:'cursor:pointer;opacity:.6;font-size:14px;', onclick: () => {
+    showModal('やり直しますか？', 'カウントを進めず新しいカードを表示します。', 'やり直す', () => { redoCurrentRound(); });
+  }}, ['↺']));
+  topbar.appendChild(right);
+  c.appendChild(topbar);
+
+  const revealRow = h('div', {class:'reveal-row'});
+  revealRow.appendChild(h('button', {class:'btn-small', style:'background:rgba(26,16,8,0.75);color:#F5F0E8;flex:1;', onclick: () => { revealAllWinnerCells(); render(); }}, ['勝者一発']));
+  revealRow.appendChild(h('button', {class:'btn-small', style:'background:rgba(139,26,26,0.85);color:#F5F0E8;flex:1;', onclick: () => { revealAllCells(); render(); }}, ['両方一発']));
+  revealRow.appendChild(h('button', {class:'btn-small', style:'background:rgba(26,16,8,0.75);color:#F5F0E8;flex:1;', onclick: () => { revealAllOddsCells(); render(); }}, ['配当一発']));
+  c.appendChild(revealRow);
+
+  if(card){
+    if(!isScratchMode && state.assignments.length){
+      const strip = h('div', {class:'assign-strip'});
+      state.assignments.slice().sort((a,b)=>a.number-b.number).forEach(a => {
+        const hex = state.numberColors[a.number] || '#1A1008';
+        const item = h('div', {class:'item'});
+        item.appendChild(h('div', {class:'box', style:'background:'+hex+';color:'+textColorFor(hex)+';'}, [String(a.number)]));
+        item.appendChild(h('div', {class:'pname'}, [a.playerName.slice(0,3)]));
+        strip.appendChild(item);
+      });
+      c.appendChild(strip);
     }
 
-    // --- 3. コアロジック (ViewModel機能群) ---
-    function initApp() {
-        // ローカルストレージ読み込み
-        let localPlayers = localStorage.getItem("kamikeba_players");
-        if (localPlayers) state.savedPlayers = JSON.parse(localPlayers);
-        
-        let localColors = localStorage.getItem("kamikeba_colors");
-        if (localColors) state.numberColors = JSON.parse(localColors);
+    const cols = h('div', {class:'race-columns'});
+    const wCol = h('div', {class:'race-col'});
+    wCol.appendChild(h('h3', {class:'serif'}, ['勝　者']));
+    const wCells = h('div', {class:'cells'});
+    winnerCells(card).forEach(cell => wCells.appendChild(buildScratchCell(cell)));
+    wCol.appendChild(wCells);
+    cols.appendChild(wCol);
 
-        // プレイヤー人数のセレクトボックス生成 (2〜24)
-        let select = document.getElementById("select-player-count");
-        select.innerHTML = "";
-        for (let i = 2; i <= 24; i++) {
-            let opt = document.createElement("option");
-            opt.value = i;
-            opt.textContent = `${i}人`;
-            if (i === 8) opt.selected = true;
-            select.appendChild(opt);
-        }
+    const oCol = h('div', {class:'race-col'});
+    oCol.appendChild(h('h3', {class:'serif'}, ['配　当']));
+    const oCells = h('div', {class:'cells'});
+    oddsCells(card).forEach(cell => oCells.appendChild(buildScratchCell(cell)));
+    oCol.appendChild(oCells);
+    cols.appendChild(oCol);
 
-        setupEventListeners();
-        renderPlayerRegistration();
-        renderColorScreen();
+    c.appendChild(cols);
+
+    const footer = h('div', {id:'race-footer'});
+    const remaining = card.cells.filter(cc => !cc.isScratched).length;
+    if(remaining > 0){
+      footer.appendChild(h('div', {class:'remaining-text'}, ['残り ' + remaining + ' マス　タップまたはスワイプで削れます']));
+    } else {
+      const box = h('div', {style:'padding:16px 0 18px;'});
+      box.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => {
+        if(isScratchMode) completeScratchOnly(); else completeRound();
+        screen = isScratchMode ? 'scratchResult' : 'result';
+        render();
+      }}, ['結果発表 →']));
+      footer.appendChild(box);
     }
-
-    function saveToStorage() {
-        localStorage.setItem("kamikeba_players", JSON.stringify(state.savedPlayers));
-        localStorage.setItem("kamikeba_colors", JSON.stringify(state.numberColors));
-    }
-
-    function startFullGame() {
-        state.currentSet = 1;
-        state.currentRound = 1;
-        state.history = [];
-        state.isGameFinished = false;
-        shuffleAssignments();
-        startRound();
-        switchScreen("screen-assignment");
-    }
-
-    function startScratchOnlyGame() {
-        state.currentSet = 1;
-        state.currentRound = 1;
-        state.scratchOnlyHistory = [];
-        state.isGameFinished = false;
-        startRound();
-        switchScreen("screen-race");
-    }
-
-    function shuffleAssignments() {
-        let pCount = state.settings.playerCount;
-        let shuffledPlayers = [...state.savedPlayers].sort(() => Math.random() - 0.5);
-        
-        state.assignments = [];
-        for (let i = 1; i <= pCount; i++) {
-            let pName = shuffledPlayers[i - 1] || `プレイヤー${i}`;
-            state.assignments.push({ number: i, playerName: pName });
-        }
-    }
-
-    function startRound() {
-        state.currentCard = generateScratchCard(state.settings.playerCount);
-        renderRaceCard();
-    }
-
-    function redoCurrentRound() {
-        if(confirm("カウントを進めず新しいカードを表示します。やり直しますか？")) {
-            startRound();
-        }
-    }
-
-    function scratchCell(cellId) {
-        let cell = state.currentCard.cells.find(c => c.id === cellId);
-        if (cell && !cell.isScratched) {
-            cell.isScratched = true;
-            if (state.settings.soundEnabled) playBeep();
-            checkScratchProgress();
-        }
-    }
-
-    function revealAllWinnerCells() {
-        state.currentCard.winnerCells.forEach(c => c.isScratched = true);
-        checkScratchProgress();
-        renderRaceCard();
-    }
-
-    function revealAllOddsCells() {
-        state.currentCard.oddsCells.forEach(c => c.isScratched = true);
-        checkScratchProgress();
-        renderRaceCard();
-    }
-
-    function revealAllCells() {
-        state.currentCard.cells.forEach(c => c.isScratched = true);
-        checkScratchProgress();
-        renderRaceCard();
-    }
-
-    function checkScratchProgress() {
-        let remaining = state.currentCard.cells.filter(c => !c.isScratched).length;
-        let msg = document.getElementById("txt-remaining-msg");
-        let btn = document.getElementById("btn-go-result");
-        
-        if (remaining > 0) {
-            msg.textContent = `残り ${remaining} マス タップまたはスワイプで削れます`;
-            btn.style.display = "none";
-        } else {
-            msg.textContent = "すべてのマスがオープンされました！";
-            btn.style.display = "block";
-        }
-    }
-
-    // フルモード用結果集計
-    function completeRound() {
-        let card = state.currentCard;
-        let roundResults = state.assignments.map(a => {
-            let isWinner = card.winnerNumbers.includes(a.number);
-            let score = 0;
-            let oddsDisplay = "―";
-
-            if (isWinner) {
-                let winIdx = card.winnerNumbers.indexOf(a.number);
-                let mol = card.oddsValues[winIdx];
-                oddsDisplay = mol === 0 ? "0" : `${mol}/${card.denominator}`;
-                score = Math.floor((state.settings.betPoints * mol) / card.denominator);
-            }
-
-            return {
-                number: a.number,
-                playerName: a.playerName,
-                isWinner,
-                oddsDisplay,
-                score
-            };
-        });
-
-        state.history.push({
-            setNumber: state.currentSet,
-            roundNumber: state.currentRound,
-            denominator: card.denominator,
-            winnerNumbers: card.winnerNumbers,
-            results: roundResults
-        });
-
-        // 終了判定
-        if (state.currentRound >= state.settings.roundsPerSet) {
-            if (state.currentSet >= state.settings.setCount) {
-                state.isGameFinished = true;
-            }
-        }
-    }
-
-    // スクラッチ専用モード用結果集計
-    function completeScratchOnly() {
-        let card = state.currentCard;
-        state.scratchOnlyHistory.push({
-            setNumber: state.currentSet,
-            scratchNumber: state.currentRound,
-            denominator: card.denominator,
-            winnerNumbers: card.winnerNumbers,
-            oddsValues: card.oddsValues
-        });
-
-        if (state.currentRound >= state.settings.roundsPerSet) {
-            if (state.currentSet >= state.settings.setCount) {
-                state.isGameFinished = true;
-            }
-        }
-    }
-
-    function getTotalScores() {
-        let scores = {};
-        state.savedPlayers.forEach(p => scores[p] = 0);
-        
-        state.history.forEach(h => {
-            h.results.forEach(r => {
-                if (scores[r.playerName] !== undefined) {
-                    scores[r.playerName] += r.score;
-                } else {
-                    scores[r.playerName] = r.score;
-                }
-            });
-        });
-
-        return Object.entries(scores).sort((a, b) => b[1] - a[1]);
-    }
-
-    function getScratchStats() {
-        let stats = {};
-        for (let i = 1; i <= state.settings.playerCount; i++) stats[i] = 0;
-
-        state.scratchOnlyHistory.forEach(h => {
-            h.winnerNumbers.forEach((num, idx) => {
-                let val = h.oddsValues[idx] || 0;
-                if (stats[num] !== undefined) stats[num] += val;
-            });
-        });
-        return stats;
-    }
-
-    function proceedNext() {
-        if (state.isGameFinished) return;
-        
-        state.currentRound++;
-        if (state.currentRound > state.settings.roundsPerSet) {
-            state.currentRound = 1;
-            state.currentSet++;
-        }
-
-        if (state.settings.mode === "FULL") {
-            shuffleAssignments();
-            startRound();
-            switchScreen("screen-assignment");
-        } else {
-            startRound();
-            switchScreen("screen-race");
-        }
-    }
-
-    // --- 4. UI描画・画面切り替え機構 (Composeの挙動再現) ---
-    function switchScreen(screenId) {
-        document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-        document.getElementById(screenId).classList.add("active");
-        window.scrollTo(0, 0);
-    }
-
-    function renderPlayerRegistration() {
-        document.getElementById("txt-registered-count").textContent = state.savedPlayers.length;
-        document.getElementById("txt-required-count").textContent = state.settings.playerCount;
-
-        let list = document.getElementById("list-players");
-        list.innerHTML = "";
-        state.savedPlayers.forEach((p, idx) => {
-            let item = document.createElement("div");
-            item.className = "player-item";
-            item.innerHTML = `
-                <span>${idx + 1}. <strong>${escapeHtml(p)}</strong></span>
-                <button class="btn-text-accent" onclick="removePlayer(${idx})">削除</button>
-            `;
-            list.appendChild(item);
-        });
-    }
-
-    function renderAssignmentScreen() {
-        document.getElementById("txt-assign-round").textContent = `${state.currentSet}セット目 - ${state.currentRound}回戦`;
-        let box = document.getElementById("box-assignments");
-        box.innerHTML = "";
-
-        state.assignments.forEach(a => {
-            let bg = state.numberColors[a.number] || "#E6DCD3";
-            let textCol = getLuminance(bg) > 0.5 ? "#000000" : "#F5EFEB";
-            
-            let row = document.createElement("div");
-            row.className = "assignment-row";
-            row.innerHTML = `
-                <div class="num-badge" style="background-color:${bg}; color:${textCol}">${a.number}</div>
-                <div style="font-size:14px; font-weight:bold;">${escapeHtml(a.playerName)}</div>
-            `;
-            box.appendChild(row);
-        });
-    }
-
-    function renderRaceCard() {
-        let isScratch = state.settings.mode === "SCRATCH";
-        document.getElementById("txt-race-progress").textContent = isScratch 
-            ? `${state.currentSet}枚目 (${state.currentRound}/${state.settings.roundsPerSet}枚完了)`
-            : `${state.currentSet}セット目 - ${state.currentRound}回戦`;
-
-        document.getElementById("txt-round-ratio").textContent = `${state.currentRound}/${state.settings.roundsPerSet}`;
-        document.getElementById("btn-toggle-sound").textContent = state.settings.soundEnabled ? "🔊" : "🔇";
-
-        // ミニプレビュー表示制御
-        let preview = document.getElementById("race-assignment-preview");
-        if (isScratch) {
-            preview.style.display = "none";
-        } else {
-            preview.style.display = "flex";
-            preview.innerHTML = "";
-            state.assignments.slice().sort((a,b)=>a.number-b.number).forEach(a => {
-                let bg = state.numberColors[a.number] || "#1A1A1A";
-                let textCol = getLuminance(bg) > 0.5 ? "#000000" : "#F5EFEB";
-                let chip = document.createElement("div");
-                chip.className = "preview-chip";
-                chip.innerHTML = `
-                    <div class="mini-badge" style="background-color:${bg}; color:${textCol}">${a.number}</div>
-                    <span>${escapeHtml(a.playerName.substring(0,3))}</span>
-                `;
-                preview.appendChild(chip);
-            });
-        }
-
-        // セル群生成
-        renderScratchCells("container-winner-cells", state.currentCard.winnerCells);
-        renderScratchCells("container-odds-cells", state.currentCard.oddsCells);
-        checkScratchProgress();
-    }
-
-    function renderScratchCells(containerId, cells) {
-        let container = document.getElementById(containerId);
-        container.innerHTML = "";
-
-        cells.forEach(cell => {
-            let box = document.createElement("div");
-            box.className = "scratch-cell-box";
-
-            // 文字描画用の隠れレイヤー
-            let valDiv = document.createElement("div");
-            valDiv.style.position = "absolute";
-            valDiv.style.width = "100%";
-            valDiv.style.height = "100%";
-            valDiv.style.display = "flex";
-            valDiv.style.justifyContent = "center";
-            valDiv.style.alignItems = "center";
-            valDiv.style.fontWeight = "bold";
-            valDiv.style.fontFamily = "serif";
-            valDiv.style.fontSize = cell.hiddenValue.includes("/") ? "15px" : "24px";
-            valDiv.textContent = cell.hiddenValue;
-            box.appendChild(valDiv);
-
-            // スクリスクラッチ用Canvas
-            if (!cell.isScratched) {
-                let canvas = document.createElement("canvas");
-                canvas.className = "scratch-canvas";
-                box.appendChild(canvas);
-
-                // レンダリング遅延対策にリサイズ保証
-                setTimeout(() => initCanvasScratch(canvas, cell.id), 0);
-            }
-
-            container.appendChild(box);
-        });
-    }
-
-    // --- HTML5 Canvas スクリスクラッチエフェクト (destination-out実装) ---
-    function initCanvasScratch(canvas, cellId) {
-        let rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width;
-        canvas.height = rect.height;
-
-        let ctx = canvas.getContext("2d");
-        // 銀削り風マット色
-        ctx.fillStyle = "#9E9E9E";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // 外枠線
-        ctx.strokeStyle = "#1A1A1A";
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
-        let isDrawing = false;
-        let strokeLength = 0;
-        let tapCount = 0;
-
-        // ダブルタップで全開判定
-        canvas.addEventListener("click", () => {
-            tapCount++;
-            if (tapCount >= 2) {
-                clearCanvas();
-            }
-            setTimeout(() => tapCount = 0, 300);
-        });
-
-        function clearCanvas() {
-            canvas.style.display = "none";
-            scratchCell(cellId);
-        }
-
-        function draw(x, y) {
-            ctx.globalCompositeOperation = "destination-out";
-            ctx.lineWidth = 22; 
-            ctx.lineCap = "round";
-            ctx.lineJoin = "round";
-            ctx.lineTo(x, y);
-            ctx.stroke();
-            strokeLength++;
-
-            // 一定以上擦ったら全開
-            if (strokeLength > 25) {
-                clearCanvas();
-            }
-        }
-
-        // マウスイベント
-        canvas.addEventListener("mousedown", (e) => {
-            isDrawing = true;
-            ctx.beginPath();
-            ctx.moveTo(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top);
-        });
-        canvas.addEventListener("mousemove", (e) => {
-            if (!isDrawing) return;
-            draw(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top);
-        });
-        window.addEventListener("mouseup", () => isDrawing = false);
-
-        // タッチイベント
-        canvas.addEventListener("touchstart", (e) => {
-            isDrawing = true;
-            ctx.beginPath();
-            let t = e.touches[0];
-            ctx.moveTo(t.clientX - canvas.getBoundingClientRect().left, t.clientY - canvas.getBoundingClientRect().top);
-        });
-        canvas.addEventListener("touchmove", (e) => {
-            if (!isDrawing) return;
-            let t = e.touches[0];
-            draw(t.clientX - canvas.getBoundingClientRect().left, t.clientY - canvas.getBoundingClientRect().top);
-            e.preventDefault();
-        });
-        window.addEventListener("touchend", () => isDrawing = false);
-    }
-
-    // --- 結果画面表示 ---
-    function renderResultScreen() {
-        let lastRound = state.history[state.history.length - 1];
-        if (!lastRound) return;
-
-        document.getElementById("txt-res-title").textContent = `${lastRound.setNumber}セット目 ${lastRound.roundNumber}回戦 結果`;
-        document.getElementById("txt-res-bet-info").textContent = `賭け点数：${state.settings.betPoints}点 分母：${lastRound.denominator}`;
-        document.getElementById("txt-res-winners").textContent = `当選番号：${lastRound.winnerNumbers.join("、")}番`;
-
-        let table = document.getElementById("table-current-round");
-        table.innerHTML = `
-            <div class="result-table-row header">
-                <div class="col-1">番号</div><div class="col-2">名前</div><div class="col-3">配当</div><div class="col-4">獲得点</div>
-            </div>
-        `;
-
-        lastRound.results.forEach(r => {
-            let dotBg = state.numberColors[r.number] || "#1A1A1A";
-            let row = document.createElement("div");
-            row.className = `result-table-row ${r.score > 0 ? 'highlight' : ''}`;
-            row.innerHTML = `
-                <div class="col-1"><span class="circle-dot" style="background-color:${dotBg}"></span>${r.isWinner ? '★' : ''}${r.number}</div>
-                <div class="col-2">${escapeHtml(r.playerName)}</div>
-                <div class="col-3">${r.oddsDisplay}</div>
-                <div class="col-4">${r.isWinner ? r.score + '点' : '―'}</div>
-            `;
-            table.appendChild(row);
-        });
-
-        // 累計ランキング表示
-        let rankWrapper = document.getElementById("wrapper-ranking");
-        if (state.history.length > 1) {
-            rankWrapper.style.display = "block";
-            let rankTable = document.getElementById("table-cumulative-ranking");
-            rankTable.innerHTML = `
-                <div class="result-table-row header">
-                    <div class="col-1">順位</div><div class="col-2">名前</div><div class="col-3"></div><div class="col-4">累計点</div>
-                </div>
-            `;
-            let totals = getTotalScores();
-            totals.forEach(([name, score], idx) => {
-                let row = document.createElement("div");
-                row.className = `result-table-row ${idx === 0 ? 'highlight' : ''}`;
-                row.innerHTML = `
-                    <div class="col-1">${idx + 1}位</div>
-                    <div class="col-2">${escapeHtml(name)}</div>
-                    <div class="col-3"></div>
-                    <div class="col-4">${score}点</div>
-                `;
-                rankTable.appendChild(row);
-            });
-        } else {
-            rankWrapper.style.display = "none";
-        }
-
-        // アクションボタン分岐
-        let actBox = document.getElementById("box-result-action");
-        actBox.innerHTML = "";
-        if (state.isGameFinished) {
-            let h1 = document.createElement("h1");
-            h1.className = "accent-text font-serif";
-            h1.style.textAlign = "center";
-            h1.style.fontSize = "20px";
-            h1.style.margin = "14px 0";
-            h1.textContent = "全回戦終了！";
-            actBox.appendChild(h1);
-
-            let btn = document.createElement("button");
-            btn.className = "btn-dark";
-            btn.textContent = "最初から";
-            btn.onclick = () => { resetAll(); switchScreen("screen-settings"); };
-            actBox.appendChild(btn);
-        } else {
-            let btn = document.createElement("button");
-            btn.className = "btn-dark";
-            btn.textContent = "次の回戦へ →";
-            btn.onclick = () => proceedNext();
-            actBox.appendChild(btn);
-        }
-    }
-
-    // スクラッチ専用結果画面表示
-    function renderScratchOnlyResultScreen() {
-        let lastHistory = state.scratchOnlyHistory[state.scratchOnlyHistory.length - 1];
-        if (!lastHistory) return;
-
-        document.getElementById("txt-scres-title").textContent = `${lastHistory.setNumber}セット目 ${lastHistory.scratchNumber}枚目 結果`;
-        
-        let container = document.getElementById("container-scres-current");
-        container.innerHTML = "";
-        lastHistory.winnerNumbers.forEach((num, idx) => {
-            let odds = lastHistory.oddsValues[idx] || 0;
-            let dotBg = state.numberColors[num] || "#1A1A1A";
-            let box = document.createElement("div");
-            box.className = "assignment-box";
-            box.style.display = "flex";
-            box.style.justifyContent = "space-between";
-            box.style.alignItems = "center";
-            box.style.marginButton = "6px";
-            box.innerHTML = `
-                <div style="display:flex; align-items:center; gap:6px;">
-                    <span class="circle-dot" style="background-color:${dotBg}"></span>
-                    <span class="accent-text" style="font-weight:bold;">当選 ${num}番</span>
-                </div>
-                <div style="font-weight:bold;">${odds === 0 ? '0' : odds + '/' + lastHistory.denominator}</div>
-            `;
-            container.appendChild(box);
-        });
-
-        let currentSetCount = state.scratchOnlyHistory.filter(h => h.setNumber === lastHistory.setNumber).length;
-        document.getElementById("txt-scres-progress").textContent = `現在：${lastHistory.setNumber}セット目 ${currentSetCount}/${state.settings.roundsPerSet}枚完了`;
-
-        // 統計グリッド表示 (chunked(4)をCSS Gridで表現)
-        let stats = getScratchStats();
-        let grid = document.getElementById("grid-scratch-stats");
-        grid.innerHTML = "";
-        for (let i = 1; i <= lastHistory.denominator; i++) {
-            let dotBg = state.numberColors[i] || "#1A1A1A";
-            let item = document.createElement("div");
-            item.className = "stats-item";
-            item.innerHTML = `
-                <div style="display:flex; align-items:center; gap:2px;">
-                    <span class="circle-dot" style="width:6px; height:6px; background-color:${dotBg}"></span>
-                    <strong>${i}</strong>
-                </div>
-                <div class="val">${stats[i] || 0}</div>
-            `;
-            grid.appendChild(item);
-        }
-
-        let actBox = document.getElementById("box-scres-action");
-        actBox.innerHTML = "";
-        
-        let isSetComplete = currentSetCount >= state.settings.roundsPerSet;
-        if (isSetComplete && state.currentSet >= state.settings.setCount) {
-            let h1 = document.createElement("h1");
-            h1.className = "accent-text font-serif";
-            h1.style.textAlign = "center";
-            h1.style.fontSize = "20px";
-            h1.style.margin = "14px 0";
-            h1.textContent = "全セット終了！";
-            actBox.appendChild(h1);
-
-            let btn = document.createElement("button");
-            btn.className = "btn-dark";
-            btn.textContent = "最初から";
-            btn.onclick = () => { resetAll(); switchScreen("screen-settings"); };
-            actBox.appendChild(btn);
-        } else {
-            let btn = document.createElement("button");
-            btn.className = "btn-dark";
-            btn.textContent = "次のスクラッチへ →";
-            btn.onclick = () => proceedNext();
-            actBox.appendChild(btn);
-        }
-    }
-
-    // --- 7. カラーカスタム画面 ---
-    function renderColorScreen() {
-        let n = state.settings.playerCount;
-        let grid = document.getElementById("grid-color-numbers");
-        grid.innerHTML = "";
-
-        for (let i = 1; i <= n; i++) {
-            let bg = state.numberColors[i] || "#E6DCD3";
-            let textCol = getLuminance(bg) > 0.5 ? "#000000" : "#F5EFEB";
-            let btn = document.createElement("div");
-            btn.className = `circle-btn ${selectedColorNumber === i ? 'active' : ''}`;
-            btn.style.backgroundColor = bg;
-            btn.style.color = textCol;
-            btn.textContent = i;
-            btn.onclick = () => {
-                selectedColorNumber = i;
-                document.getElementById("wrapper-custom-picker").style.display = "none";
-                renderColorScreen();
-            };
-            grid.appendChild(btn);
-        }
-
-        // 現在色更新
-        document.getElementById("txt-selected-num").textContent = selectedColorNumber;
-        let currentHex = state.numberColors[selectedColorNumber];
-        let dot = document.getElementById("color-preview-dot");
-        dot.style.backgroundColor = currentHex || "#1A1A1A";
-
-        // 24色パレット更新
-        let pGrid = document.getElementById("grid-palette-24");
-        pGrid.innerHTML = "";
-        PALETTE_24.forEach(hex => {
-            let chip = document.createElement("div");
-            chip.className = "palette-chip";
-            chip.style.backgroundColor = hex;
-            chip.onclick = () => {
-                state.numberColors[selectedColorNumber] = hex;
-                saveToStorage();
-                renderColorScreen();
-            };
-            pGrid.appendChild(chip);
-        });
-    }
-
-    // --- 各種イベントリスナー登録 ---
-    function setupEventListeners() {
-        // 設定画面から次へ
-        document.getElementById("btn-settings-next").onclick = () => {
-            let mode = document.querySelector('input[name="gameMode"]:checked').value;
-            state.settings.mode = mode;
-            state.settings.playerCount = parseInt(document.getElementById("select-player-count").value);
-            state.settings.roundsPerSet = parseInt(document.getElementById("select-rounds").value);
-            state.settings.setCount = parseInt(document.getElementById("select-sets").value);
-            state.settings.betPoints = parseInt(document.getElementById("select-bet").value);
-
-            if (mode === "FULL") {
-                renderPlayerRegistration();
-                switchScreen("screen-players");
-            } else {
-                startScratchOnlyGame();
-            }
-        };
-
-        // ラジオボタン切り替えで賭け点数の表示制御
-        document.getElementsByName("gameMode").forEach(r => {
-            r.onchange = (e) => {
-                document.getElementById("row-bet-points").style.style = e.target.value === "SCRATCH" ? "none" : "block";
-            };
-        });
-
-        document.getElementById("btn-go-colors").onclick = () => {
-            state.settings.playerCount = parseInt(document.getElementById("select-player-count").value);
-            renderColorScreen();
-            switchScreen("screen-colors");
-        };
-
-        // プレイヤー登録系
-        document.getElementById("btn-add-player").onclick = addPlayer;
-        document.getElementById("input-player-name").onkeydown = (e) => { if(e.key === "Enter") addPlayer(); };
-        document.getElementById("btn-players-back").onclick = () => switchScreen("screen-settings");
-        document.getElementById("btn-players-start").onclick = () => {
-            if (state.savedPlayers.length < state.settings.playerCount) {
-                alert(`参加人数（分母）と同じ ${state.settings.playerCount} 人の登録が必要です！`);
-                return;
-            }
-            startFullGame();
-        };
-
-        // 割当からスクラッチへ
-        document.getElementById("btn-assignment-next").onclick = () => {
-            switchScreen("screen-race");
-        };
-
-        // スクラッチ一発オープン系
-        document.getElementById("btn-reveal-winners").onclick = revealAllWinnerCells;
-        document.getElementById("btn-reveal-odds").onclick = revealAllOddsCells;
-        document.getElementById("btn-reveal-all").onclick = revealAllCells;
-        document.getElementById("btn-redo-round").onclick = redoCurrentRound;
-        document.getElementById("btn-toggle-sound").onclick = () => {
-            state.settings.soundEnabled = !state.settings.soundEnabled;
-            document.getElementById("btn-toggle-sound").textContent = state.settings.soundEnabled ? "🔊" : "🔇";
-        };
-
-        // 結果ボタン
-        document.getElementById("btn-go-result").onclick = () => {
-            if (state.settings.mode === "FULL") {
-                completeRound();
-                renderResultScreen();
-                switchScreen("screen-result");
-            } else {
-                completeScratchOnly();
-                renderScratchOnlyResultScreen();
-                switchScreen("screen-result-scratch");
-            }
-        };
-
-        // 色リセット
-        document.getElementById("btn-reset-color").onclick = () => {
-            if (DEFAULT_COLORS[selectedColorNumber]) {
-                state.numberColors[selectedColorNumber] = DEFAULT_COLORS[selectedColorNumber];
-            } else {
-                delete state.numberColors[selectedColorNumber];
-            }
-            saveToStorage();
-            renderColorScreen();
-        };
-
-        // カスタムカラーアコーディオン
-        let btnToggle = document.getElementById("btn-toggle-custom");
-        let wrapperCustom = document.getElementById("wrapper-custom-picker");
-        btnToggle.onclick = () => {
-            let isHidden = wrapperCustom.style.display === "none";
-            wrapperCustom.style.display = isHidden ? "block" : "none";
-            btnToggle.textContent = isHidden ? "▲ カスタム色を閉じる" : "▼ カスタム色（RGBで指定）";
-            if(isHidden) updateCustomPreview();
-        };
-
-        // RGBスライダー変動イベント
-        ["r", "g", "b"].forEach(c => {
-            let slider = document.getElementById(`slide-${c}`);
-            slider.oninput = () => {
-                document.getElementById(`val-${c}`).textContent = slider.value;
-                updateCustomPreview();
-            };
-        });
-
-        // カスタムカラー決定ボタン
-        document.getElementById("btn-apply-custom").onclick = () => {
-            let r = parseInt(document.getElementById("slide-r").value);
-            let g = parseInt(document.getElementById("slide-g").value);
-            let b = parseInt(document.getElementById("slide-b").value);
-            let hex = "#" + [r, g, b].map(x => x.toString(16).padStart(2, "0")).join("").toUpperCase();
-            
-            state.numberColors[selectedColorNumber] = hex;
-            saveToStorage();
-            renderColorScreen();
-            wrapperCustom.style.display = "none";
-            btnToggle.textContent = "▼ カスタム色（RGBで指定）";
-        };
-
-        document.getElementById("btn-colors-back").onclick = () => switchScreen("screen-settings");
-    }
-
-    function addPlayer() {
-        let input = document.getElementById("input-player-name");
-        let name = input.value.trim();
-        if (!name) return;
-        if (state.savedPlayers.includes(name)) {
-            alert("同名のプレイヤーが既に登録されています。");
-            return;
-        }
-        if (state.savedPlayers.length >= state.settings.playerCount) {
-            alert(`今回の設定人数（${state.settings.playerCount}人）を超えています。先に設定を変更してください。`);
-            return;
-        }
-
-        state.savedPlayers.push(name);
-        saveToStorage();
-        input.value = "";
-        renderPlayerRegistration();
-    }
-
-    function removePlayer(idx) {
-        state.savedPlayers.splice(idx, 1);
-        saveToStorage();
-        renderPlayerRegistration();
-    }
-
-    function updateCustomPreview() {
-        let r = parseInt(document.getElementById("slide-r").value);
-        let g = parseInt(document.getElementById("slide-g").value);
-        let b = parseInt(document.getElementById("slide-b").value);
-        let rgbStr = `rgb(${r}, ${g}, ${b})`;
-        let preview = document.getElementById("custom-rgb-preview");
-        preview.style.backgroundColor = rgbStr;
-    }
-
-    function resetAll() {
-        state.currentSet = 1;
-        state.currentRound = 1;
-        state.history = [];
-        state.scratchOnlyHistory = [];
-        state.isGameFinished = false;
-    }
-
-    // --- 便利ユーティリティ関数群 ---
-    function getLuminance(hex) {
-        let c = hex.substring(1);
-        let rgb = parseInt(c, 16);
-        let r = (rgb >> 16) & 0xff;
-        let g = (rgb >> 8) & 0xff;
-        let b = (rgb >> 0) & 0xff;
-        return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-    }
-
-    function escapeHtml(str) {
-        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    }
-
-    // Web Audio APIによる簡易Beep音 (Kotlinの効果音の軽量再現)
-    function playBeep() {
-        try {
-            let ctx = new (window.AudioContext || window.webkitAudioContext)();
-            let osc = ctx.createOscillator();
-            let gain = ctx.createGain();
-            osc.type = "sine";
-            osc.frequency.setValueAtTime(880, ctx.currentTime); // 高めのピピッ音
-            gain.gain.setValueAtTime(0.05, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.1);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start();
-            osc.stop(ctx.currentTime + 0.1);
-        } catch(e) {}
-    }
-
-    // アプリ起動
-    window.onload = initApp;
+    c.appendChild(footer);
+  }
+  return c;
+}
+
+function renderResult(){
+  const c = h('div', {class:'screen'});
+  const last = state.history[state.history.length - 1];
+  if(!last) return c;
+  const totalScores = getTotalScores();
+
+  c.appendChild(headerStamp());
+  c.appendChild(h('div', {style:'text-align:center;font-size:15px;font-weight:700;'+''}, []));
+  const title = h('div', {class:'serif', style:'text-align:center;font-size:15px;font-weight:700;margin-bottom:4px;'}, [last.setNumber + 'セット目　' + last.roundNumber + '回戦　結果']);
+  c.appendChild(title);
+  c.appendChild(h('hr', {class:'thin-divider'}));
+
+  c.appendChild(h('div', {class:'info-box'}, [
+    '賭け点数：' + state.settings.betPoints + '点　分母：' + last.denominator + '\n' +
+    '当選番号：' + last.winnerNumbers.join('、') + '番'
+  ]));
+
+  c.appendChild(h('div', {class:'screen-title serif', style:'font-size:14px;margin-top:10px;'}, ['今回の結果']));
+  c.appendChild(resultRow('番号','名前','配当','獲得点', {header:true}));
+  c.appendChild(h('hr', {class:'thin-divider'}));
+  last.results.forEach(r => {
+    const dot = state.numberColors[r.number];
+    c.appendChild(resultRow(
+      (r.isWinner ? '★' : '') + r.number, r.playerName, oddsDisplay(r),
+      r.isWinner ? (r.score + '点') : '―',
+      { highlight: r.score > 0, dotColor: dot }
+    ));
+    c.appendChild(h('hr', {class:'row-divider'}));
+  });
+
+  if(state.history.length > 1){
+    c.appendChild(h('div', {style:'height:10px;'}));
+    c.appendChild(h('div', {class:'screen-title serif', style:'font-size:14px;'}, ['累計ランキング']));
+    c.appendChild(resultRow('順位','名前','','累計点', {header:true}));
+    c.appendChild(h('hr', {class:'thin-divider'}));
+    totalScores.forEach((entry, i) => {
+      c.appendChild(resultRow((i+1)+'位', entry[0], '', entry[1]+'点', {highlight: i===0}));
+      c.appendChild(h('hr', {class:'row-divider'}));
+    });
+  }
+
+  c.appendChild(h('div', {style:'height:20px;'}));
+  if(isGameFinished()){
+    c.appendChild(h('div', {class:'finish-text serif'}, ['全回戦終了！']));
+    c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { resetAll(); screen='settings'; render(); }}, ['最初から']));
+  } else {
+    c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { screen='assign'; render(); }}, ['次の回戦へ →']));
+  }
+  return c;
+}
+
+function renderScratchResult(){
+  const c = h('div', {class:'screen'});
+  const last = state.scratchOnlyHistory[state.scratchOnlyHistory.length - 1];
+  if(!last) return c;
+  const stats = getScratchStats();
+  const currentSetCount = state.scratchOnlyHistory.filter(h2 => h2.setNumber === last.setNumber).length;
+  const isSetComplete = currentSetCount >= state.settings.roundsPerSet;
+
+  c.appendChild(headerStamp());
+  c.appendChild(h('div', {class:'serif', style:'text-align:center;font-size:15px;font-weight:700;margin-bottom:4px;'}, [last.setNumber + 'セット目　' + last.scratchNumber + '枚目　結果']));
+  c.appendChild(h('hr', {class:'thin-divider'}));
+
+  c.appendChild(h('div', {class:'screen-title serif', style:'font-size:14px;'}, ['今回の結果']));
+  last.winnerNumbers.forEach((num, i) => {
+    const odds = last.oddsValues[i] || 0;
+    const dot = state.numberColors[num];
+    const row = h('div', {class:'assign-item'});
+    const left = h('div', {class:'left'});
+    if(dot) left.appendChild(h('span', {class:'dot', style:'background:'+dot}));
+    left.appendChild(h('span', {style:'font-weight:700;color:#8B1A1A;'}, ['当選 ' + num + '番']));
+    row.appendChild(left);
+    row.appendChild(h('span', {style:'font-size:14px;'}, [odds===0?'0':(odds+'/'+last.denominator)]));
+    c.appendChild(row);
+  });
+
+  c.appendChild(h('div', {style:'height:14px;'}));
+  c.appendChild(h('div', {class:'screen-title serif', style:'font-size:13px;'}, ['履歴・統計（' + state.scratchOnlyHistory.length + '枚目まで）']));
+  c.appendChild(h('div', {style:'font-size:12px;margin-bottom:8px;'}, ['現在：' + last.setNumber + 'セット目　' + currentSetCount + '/' + state.settings.roundsPerSet + '枚完了']));
+
+  const statBox = h('div', {class:'info-box'});
+  statBox.appendChild(h('div', {style:'font-weight:700;font-size:12px;margin-bottom:6px;'}, ['番号別 累計配当合計']));
+  const nums = [...Array(last.denominator).keys()].map(i => i+1);
+  for(let i=0; i<nums.length; i+=4){
+    const row = h('div', {style:'display:flex;justify-content:space-evenly;margin-bottom:4px;'});
+    nums.slice(i, i+4).forEach(num => {
+      const dot = state.numberColors[num];
+      const col = h('div', {style:'flex:1;text-align:center;'});
+      const label = h('div', {style:'display:flex;align-items:center;justify-content:center;gap:2px;'});
+      if(dot) label.appendChild(h('span', {style:'width:6px;height:6px;border-radius:50%;background:'+dot+';display:inline-block;'}));
+      label.appendChild(h('span', {style:'font-size:10px;font-weight:700;'}, [String(num)]));
+      col.appendChild(label);
+      col.appendChild(h('div', {style:'font-size:12px;color:#8B1A1A;font-weight:800;'}, [String(stats[num] || 0)]));
+      row.appendChild(col);
+    });
+    statBox.appendChild(row);
+  }
+  c.appendChild(statBox);
+
+  c.appendChild(h('div', {style:'height:20px;'}));
+  if(isSetComplete && state.currentSet > state.settings.setCount){
+    c.appendChild(h('div', {class:'finish-text serif'}, ['全セット終了！']));
+    c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { resetAll(); screen='settings'; render(); }}, ['最初から']));
+  } else {
+    c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { startRound(); screen='race'; render(); }}, ['次のスクラッチへ →']));
+  }
+  return c;
+}
+
+/* ---------- root render ---------- */
+function render(){
+  app.innerHTML = '';
+  let node;
+  switch(screen){
+    case 'settings': node = renderSettings(); break;
+    case 'colorSetting': node = renderColorSetting(); break;
+    case 'playerSelect': node = renderPlayerSelect(); break;
+    case 'assign': node = renderAssign(); break;
+    case 'race': node = renderRace(); break;
+    case 'result': node = renderResult(); break;
+    case 'scratchResult': node = renderScratchResult(); break;
+    default: node = renderSettings();
+  }
+  app.appendChild(node);
+}
+
+render();
 </script>
-
 </body>
 </html>
