@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>WINNERS &amp; ODDS - カミケバ</title>
+<title>WINNERS &amp; PAYOUT - カミケバ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -54,19 +54,8 @@
     font-size:24px;
     letter-spacing:3px;
     color:var(--ink);
-    position:relative;
     display:inline-block;
     padding:0 6px;
-  }
-  .header-title::after{
-    content:'';
-    position:absolute; left:-14px; top:-8px;
-    width:calc(100% + 28px); height:calc(100% + 14px);
-    border:1.5px solid var(--red);
-    border-radius:50%;
-    opacity:0.35;
-    transform:rotate(-3deg);
-    pointer-events:none;
   }
   .header-divider{ border:none; border-top:2px solid var(--ink); margin:8px 0 0; }
   .screen-title{
@@ -259,6 +248,19 @@
     margin-bottom:14px;
   }
   ::-webkit-scrollbar{ width:0; height:0; }
+
+  /* ---------- back (return) button ---------- */
+  .back-btn{
+    position:fixed;
+    bottom:16px;
+    left:max(12px, calc(50% - 240px + 12px));
+    width:44px; height:44px; border-radius:50%;
+    background:rgba(26,16,8,0.85); color:#F5F0E8; border:none;
+    font-size:19px; cursor:pointer; z-index:50;
+    box-shadow:0 3px 10px rgba(0,0,0,0.35);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .back-btn:active{ transform:scale(0.92); }
 </style>
 </head>
 <body>
@@ -266,7 +268,7 @@
 
 <script>
 /* =========================================================
-   カミケバ (WINNERS & ODDS) — Web port
+   カミケバ (WINNERS & PAYOUT) — Web port
    Ported from Android/Kotlin Jetpack Compose source
    ========================================================= */
 
@@ -360,7 +362,16 @@ function calcResults(assignments, card, betPoints){
   results.sort((a,b) => b.score - a.score);
   return results;
 }
-function oddsDisplay(r){ return r.oddsNumerator === 0 ? '0' : (r.oddsNumerator + '/' + r.denominator); }
+function oddsDisplay(r){
+  if(r.oddsNumerator === 0) return '0';
+  return state.settings.oddsDisplayMode === 'fraction' ? (r.oddsNumerator + '/' + r.denominator) : String(r.oddsNumerator);
+}
+// スクラッチマスの配当セル用: hiddenValue("3/8" or "0")を設定に応じて整形
+function displayOddsCellValue(hiddenValue){
+  if(hiddenValue === '0') return '0';
+  const numerator = hiddenValue.split('/')[0];
+  return state.settings.oddsDisplayMode === 'fraction' ? hiddenValue : numerator;
+}
 
 function randomAssign(players, playerCount, allowDuplicate){
   if(players.length === 0) return [];
@@ -396,7 +407,7 @@ let state = {
   settings: {
     mode: 'FULL', playerCount: 8, winnerCount: 3, setCount: 10, roundsPerSet: 30,
     betPoints: 1, soundEnabled: true, minGuaranteeProbability: 80, jackpotProbability: 5,
-    allowDuplicateNumbers: false
+    allowDuplicateNumbers: false, oddsDisplayMode: 'number' // 'number' = 数字のみ(デフォルト) / 'fraction' = 分数
   },
   savedPlayers: [],       // {id, name}
   activePlayerIds: [],
@@ -410,6 +421,21 @@ let state = {
 };
 let nextPlayerId = 1;
 let screen = 'settings';
+let navStack = []; // 「戻る」ボタン用の画面履歴
+
+function goTo(newScreen){
+  navStack.push(screen);
+  screen = newScreen;
+}
+function goToRoot(newScreen){
+  navStack = [];
+  screen = newScreen;
+}
+function goBack(){
+  if(navStack.length === 0) return;
+  screen = navStack.pop();
+  render();
+}
 
 function activePlayers(){ return state.savedPlayers.filter(p => state.activePlayerIds.includes(p.id)); }
 function totalRounds(){ return state.settings.setCount * state.settings.roundsPerSet; }
@@ -503,9 +529,9 @@ function toggleSound(){ state.settings.soundEnabled = !state.settings.soundEnabl
 function setNumberColor(num, hex){ state.numberColors[num] = hex; }
 function resetNumberColor(num){ delete state.numberColors[num]; }
 function resetAll(){
-  const saved = state.savedPlayers, colors = state.numberColors, allowDup = state.settings.allowDuplicateNumbers;
+  const saved = state.savedPlayers, colors = state.numberColors, allowDup = state.settings.allowDuplicateNumbers, oddsMode = state.settings.oddsDisplayMode;
   state = {
-    settings: { mode:'FULL', playerCount:8, winnerCount:3, setCount:10, roundsPerSet:30, betPoints:1, soundEnabled:true, minGuaranteeProbability:80, jackpotProbability:5, allowDuplicateNumbers: allowDup },
+    settings: { mode:'FULL', playerCount:8, winnerCount:3, setCount:10, roundsPerSet:30, betPoints:1, soundEnabled:true, minGuaranteeProbability:80, jackpotProbability:5, allowDuplicateNumbers: allowDup, oddsDisplayMode: oddsMode },
     savedPlayers: saved, activePlayerIds: [], assignments: [], currentSet:1, currentRound:1, currentCard:null,
     history: [], scratchOnlyHistory: [], numberColors: colors
   };
@@ -527,7 +553,7 @@ function h(tag, attrs, children){
 }
 function headerStamp(){
   return h('div', {class:'header-wrap'}, [
-    h('div', {class:'header-title serif'}, ['WINNERS & ODDS']),
+    h('div', {class:'header-title serif'}, ['WINNERS & PAYOUT']),
     h('hr', {class:'header-divider'})
   ]);
 }
@@ -591,8 +617,9 @@ function showModal(title, message, confirmLabel, onConfirm){
 /* ---------- scratch cell (canvas scratch effect) ---------- */
 function buildScratchCell(cell){
   const wrap = h('div', {class:'scratch-cell'});
-  const isSmallText = cell.hiddenValue.includes('/');
-  wrap.appendChild(h('div', {class:'value' + (isSmallText?' small':'')}, [cell.hiddenValue]));
+  const displayText = cell.isWinner ? cell.hiddenValue : displayOddsCellValue(cell.hiddenValue);
+  const isSmallText = displayText.includes('/');
+  wrap.appendChild(h('div', {class:'value' + (isSmallText?' small':'')}, [displayText]));
   if(cell.isScratched) return wrap;
 
   const canvas = document.createElement('canvas');
@@ -668,7 +695,7 @@ function checkAllScratchedAndUpdateFooter(){
   } else {
     const btn = h('button', {class:'btn btn-ink', style:'margin:0 20px; width:calc(100% - 40px);', onclick: () => {
       if(isScratchMode) completeScratchOnly(); else completeRound();
-      screen = isScratchMode ? 'scratchResult' : 'result';
+      goTo(isScratchMode ? 'scratchResult' : 'result');
       render();
     }}, ['結果発表 →']);
     const box = h('div', {style:'padding:0 0 18px;'});
@@ -707,6 +734,8 @@ function renderSettings(){
 
   c.appendChild(toggleRow('番号かぶりあり', '同じ番号を複数人が持てる', s.allowDuplicateNumbers, (v)=>{ s.allowDuplicateNumbers = v; }));
   c.appendChild(toggleRow('効果音', null, s.soundEnabled, (v)=>{ s.soundEnabled = v; }));
+  c.appendChild(toggleRow('配当を分数で表示', 'OFF＝数字のみ（例：3）／ON＝分数（例：3/8）', s.oddsDisplayMode === 'fraction',
+    (v)=>{ s.oddsDisplayMode = v ? 'fraction' : 'number'; }));
 
   let showAdvanced = state._showAdvanced || false;
   const advToggle = h('button', {class:'btn-outline', style:'margin-bottom:8px;', onclick: ()=>{ state._showAdvanced = !showAdvanced; render(); }},
@@ -729,18 +758,18 @@ function renderSettings(){
     c.appendChild(box);
   }
 
-  c.appendChild(h('button', {class:'btn-outline', style:'margin-bottom:10px;', onclick: () => { screen='colorSetting'; render(); }}, ['🎨 番号の色を設定']));
+  c.appendChild(h('button', {class:'btn-outline', style:'margin-bottom:10px;', onclick: () => { goTo('colorSetting'); render(); }}, ['🎨 番号の色を設定']));
 
   c.appendChild(h('div', {style:'height:10px;'}));
   c.appendChild(h('button', {class:'btn btn-ink serif', style:'margin-bottom:10px;', onclick: () => {
     s.mode = 'FULL';
-    screen = 'playerSelect';
+    goTo('playerSelect');
     render();
   }}, ['🏇 フルモード']));
   c.appendChild(h('button', {class:'btn btn-brown serif', onclick: () => {
     s.mode = 'SCRATCH';
     startRound();
-    screen = 'race';
+    goTo('race');
     render();
   }}, ['🎰 スクラッチ専用モード']));
 
@@ -822,7 +851,7 @@ function renderColorSetting(){
   }
 
   c.appendChild(h('div', {style:'height:24px;'}));
-  c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { screen='settings'; render(); }}, ['← 設定に戻る']));
+  c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { goBack(); }}, ['← 設定に戻る']));
   return c;
 }
 
@@ -859,7 +888,7 @@ function renderPlayerSelect(){
   c.appendChild(h('div', {style:'height:16px;'}));
   c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => {
     if(state.activePlayerIds.length < 2){ state._playerError = '2人以上選んでください'; }
-    else { state._playerError = ''; screen = 'assign'; }
+    else { state._playerError = ''; goTo('assign'); }
     render();
   }}, ['番号割当へ →']));
   return c;
@@ -928,7 +957,7 @@ function renderAssign(){
   });
 
   c.appendChild(h('div', {style:'height:20px;'}));
-  const startBtn = h('button', {class:'btn btn-ink serif', onclick: () => { startRound(); screen='race'; render(); }}, ['レース開始！ →']);
+  const startBtn = h('button', {class:'btn btn-ink serif', onclick: () => { startRound(); goTo('race'); render(); }}, ['レース開始！ →']);
   if(state.assignments.length !== n) startBtn.disabled = true;
   c.appendChild(startBtn);
   return c;
@@ -996,7 +1025,7 @@ function renderRace(){
       const box = h('div', {style:'padding:16px 0 18px;'});
       box.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => {
         if(isScratchMode) completeScratchOnly(); else completeRound();
-        screen = isScratchMode ? 'scratchResult' : 'result';
+        goTo(isScratchMode ? 'scratchResult' : 'result');
         render();
       }}, ['結果発表 →']));
       footer.appendChild(box);
@@ -1050,9 +1079,9 @@ function renderResult(){
   c.appendChild(h('div', {style:'height:20px;'}));
   if(isGameFinished()){
     c.appendChild(h('div', {class:'finish-text serif'}, ['全回戦終了！']));
-    c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { resetAll(); screen='settings'; render(); }}, ['最初から']));
+    c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { resetAll(); goToRoot('settings'); render(); }}, ['最初から']));
   } else {
-    c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { screen='assign'; render(); }}, ['次の回戦へ →']));
+    c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { goTo('assign'); render(); }}, ['次の回戦へ →']));
   }
   return c;
 }
@@ -1078,7 +1107,7 @@ function renderScratchResult(){
     if(dot) left.appendChild(h('span', {class:'dot', style:'background:'+dot}));
     left.appendChild(h('span', {style:'font-weight:700;color:#8B1A1A;'}, ['当選 ' + num + '番']));
     row.appendChild(left);
-    row.appendChild(h('span', {style:'font-size:14px;'}, [odds===0?'0':(odds+'/'+last.denominator)]));
+    row.appendChild(h('span', {style:'font-size:14px;'}, [odds===0?'0':displayOddsCellValue(odds+'/'+last.denominator)]));
     c.appendChild(row);
   });
 
@@ -1108,9 +1137,9 @@ function renderScratchResult(){
   c.appendChild(h('div', {style:'height:20px;'}));
   if(isSetComplete && state.currentSet > state.settings.setCount){
     c.appendChild(h('div', {class:'finish-text serif'}, ['全セット終了！']));
-    c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { resetAll(); screen='settings'; render(); }}, ['最初から']));
+    c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { resetAll(); goToRoot('settings'); render(); }}, ['最初から']));
   } else {
-    c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { startRound(); screen='race'; render(); }}, ['次のスクラッチへ →']));
+    c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { startRound(); goTo('race'); render(); }}, ['次のスクラッチへ →']));
   }
   return c;
 }
@@ -1130,6 +1159,10 @@ function render(){
     default: node = renderSettings();
   }
   app.appendChild(node);
+
+  if(navStack.length > 0){
+    app.appendChild(h('button', {class:'back-btn', title:'一つ前の画面へ戻る', onclick: goBack}, ['←']));
+  }
 }
 
 render();
