@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>WINNERS &amp; PAYOUT - Raffle Pot</title>
+<title>WINNERS &amp; PAYOUT - カミケバ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -261,6 +261,19 @@
     display:flex; align-items:center; justify-content:center;
   }
   .back-btn:active{ transform:scale(0.92); }
+
+  /* ---------- settings shortcut button ---------- */
+  .settings-btn{
+    position:fixed;
+    bottom:16px;
+    right:max(12px, calc(50% - 240px + 12px));
+    width:44px; height:44px; border-radius:50%;
+    background:rgba(139,26,26,0.88); color:#F5F0E8; border:none;
+    font-size:19px; cursor:pointer; z-index:50;
+    box-shadow:0 3px 10px rgba(0,0,0,0.35);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .settings-btn:active{ transform:scale(0.92); }
 </style>
 </head>
 <body>
@@ -417,7 +430,8 @@ let state = {
   currentCard: null,
   history: [],             // RoundHistory
   scratchOnlyHistory: [],  // ScratchOnlyHistory
-  numberColors: {}         // number -> hex
+  numberColors: {},        // number -> hex
+  isInProgress: false      // ゲーム進行中かどうか(設定画面の表示切替に使用)
 };
 let nextPlayerId = 1;
 let screen = 'settings';
@@ -463,6 +477,15 @@ function getScratchStats(){
     });
   });
   return stats;
+}
+function getScratchWinCounts(){
+  const counts = {};
+  state.scratchOnlyHistory.forEach(h => {
+    h.winnerNumbers.forEach(num => {
+      counts[num] = (counts[num] || 0) + 1;
+    });
+  });
+  return counts;
 }
 
 /* ---------- actions ---------- */
@@ -533,7 +556,7 @@ function resetAll(){
   state = {
     settings: { mode:'FULL', playerCount:8, winnerCount:3, setCount:10, roundsPerSet:30, betPoints:1, soundEnabled:true, minGuaranteeProbability:80, jackpotProbability:5, allowDuplicateNumbers: allowDup, oddsDisplayMode: oddsMode },
     savedPlayers: saved, activePlayerIds: [], assignments: [], currentSet:1, currentRound:1, currentCard:null,
-    history: [], scratchOnlyHistory: [], numberColors: colors
+    history: [], scratchOnlyHistory: [], numberColors: colors, isInProgress: false
   };
 }
 
@@ -557,22 +580,22 @@ function headerStamp(){
     h('hr', {class:'header-divider'})
   ]);
 }
-function settingRow(label, value, min, max, unit, onMinus, onPlus){
-  const row = h('div', {class:'setting-row'});
+function settingRow(label, value, min, max, unit, onMinus, onPlus, disabled){
+  const row = h('div', {class:'setting-row' + (disabled?' row-disabled':''), style: disabled ? 'opacity:0.45;' : ''});
   row.appendChild(h('div', {class:'setting-label'}, [label]));
   const stepper = h('div', {class:'stepper'});
-  const minusBtn = h('button', { onclick:()=>{ onMinus(); render(); } }, ['－']);
-  if(value<=min) minusBtn.disabled = true;
-  const plusBtn = h('button', { onclick:()=>{ onPlus(); render(); } }, ['＋']);
-  if(value>=max) plusBtn.disabled = true;
+  const minusBtn = h('button', { onclick:()=>{ if(disabled) return; onMinus(); render(); } }, ['－']);
+  if(disabled || value<=min) minusBtn.disabled = true;
+  const plusBtn = h('button', { onclick:()=>{ if(disabled) return; onPlus(); render(); } }, ['＋']);
+  if(disabled || value>=max) plusBtn.disabled = true;
   stepper.appendChild(minusBtn);
   stepper.appendChild(h('div', {class:'val'}, [value + ' ' + unit]));
   stepper.appendChild(plusBtn);
   row.appendChild(stepper);
   return row;
 }
-function toggleRow(label, sub, checked, onChange){
-  const row = h('div', {class:'toggle-row'});
+function toggleRow(label, sub, checked, onChange, disabled){
+  const row = h('div', {class:'toggle-row', style: disabled ? 'opacity:0.45;' : ''});
   const left = h('div', {}, [h('div', {class:'setting-label'}, [label])]);
   if(sub) left.appendChild(h('div', {class:'sub'}, [sub]));
   row.appendChild(left);
@@ -582,7 +605,8 @@ function toggleRow(label, sub, checked, onChange){
   const sw = h('label', {class:'switch'});
   const input = h('input', {type:'checkbox'});
   input.checked = checked;
-  input.addEventListener('change', () => { onChange(input.checked); render(); });
+  input.disabled = !!disabled;
+  input.addEventListener('change', () => { if(disabled) return; onChange(input.checked); render(); });
   sw.appendChild(input);
   sw.appendChild(h('span', {class:'track'}));
   right.appendChild(sw);
@@ -712,27 +736,35 @@ function renderSettings(){
   const s = state.settings;
   const c = h('div', {class:'screen'});
   c.appendChild(headerStamp());
+
+  const midGame = state.isInProgress; // レース進行中かどうか（構造設定のロックに使用）
+
   c.appendChild(h('div', {class:'screen-title serif'}, ['ゲーム設定']));
   c.appendChild(h('hr', {class:'thin-divider'}));
 
+  if(midGame){
+    c.appendChild(h('div', {style:'font-size:11px;color:#8B1A1A;margin-bottom:10px;'},
+      ['※ レース中は人数・勝者数・セット数・回戦数・番号かぶり設定は変更できません（賭け点数・確率・効果音・配当表示はいつでも変更可能です）']));
+  }
+
   c.appendChild(settingRow('参加人数', s.playerCount, 2, 30, '人',
     () => { if(s.playerCount>2){ s.playerCount--; if(s.winnerCount>=s.playerCount) s.winnerCount = s.playerCount-1; } },
-    () => { if(s.playerCount<30) s.playerCount++; if(s.winnerCount>=s.playerCount) s.winnerCount=s.playerCount-1; }));
+    () => { if(s.playerCount<30) s.playerCount++; if(s.winnerCount>=s.playerCount) s.winnerCount=s.playerCount-1; }, midGame));
   c.appendChild(document.createElement('div')).style.height='0px';
   c.appendChild(settingRow('勝者数', s.winnerCount, 1, s.playerCount-1, '名',
     () => { if(s.winnerCount>1) s.winnerCount--; },
-    () => { if(s.winnerCount<s.playerCount-1) s.winnerCount++; }));
+    () => { if(s.winnerCount<s.playerCount-1) s.winnerCount++; }, midGame));
 
   c.appendChild(h('div', {class:'info-box'}, [
     '配当：合計' + s.playerCount + 'ポイントを勝者' + s.winnerCount + '名で分配\n得点 ＝ 配当分子 × 賭け点数'
   ]));
 
   c.appendChild(settingRow('賭け点数（一律）', s.betPoints, 1, 99, '点', ()=>{if(s.betPoints>1)s.betPoints--;}, ()=>{if(s.betPoints<99)s.betPoints++;}));
-  c.appendChild(settingRow('セット数', s.setCount, 1, 99, 'セット', ()=>{if(s.setCount>1)s.setCount--;}, ()=>{if(s.setCount<99)s.setCount++;}));
-  c.appendChild(settingRow('1セット回戦数', s.roundsPerSet, 1, 99, '回戦', ()=>{if(s.roundsPerSet>1)s.roundsPerSet--;}, ()=>{if(s.roundsPerSet<99)s.roundsPerSet++;}));
+  c.appendChild(settingRow('セット数', s.setCount, 1, 99, 'セット', ()=>{if(s.setCount>1)s.setCount--;}, ()=>{if(s.setCount<99)s.setCount++;}, midGame));
+  c.appendChild(settingRow('1セット回戦数', s.roundsPerSet, 1, 99, '回戦', ()=>{if(s.roundsPerSet>1)s.roundsPerSet--;}, ()=>{if(s.roundsPerSet<99)s.roundsPerSet++;}, midGame));
   c.appendChild(h('div', {style:'text-align:right; font-size:12px; color:#8B1A1A; font-weight:700; margin:4px 0 10px;'}, ['総回戦数：' + (s.setCount*s.roundsPerSet) + '回']));
 
-  c.appendChild(toggleRow('番号かぶりあり', '同じ番号を複数人が持てる', s.allowDuplicateNumbers, (v)=>{ s.allowDuplicateNumbers = v; }));
+  c.appendChild(toggleRow('番号かぶりあり', '同じ番号を複数人が持てる', s.allowDuplicateNumbers, (v)=>{ s.allowDuplicateNumbers = v; }, midGame));
   c.appendChild(toggleRow('効果音', null, s.soundEnabled, (v)=>{ s.soundEnabled = v; }));
   c.appendChild(toggleRow('配当を分数で表示', 'OFF＝数字のみ（例：3）／ON＝分数（例：3/8）', s.oddsDisplayMode === 'fraction',
     (v)=>{ s.oddsDisplayMode = v ? 'fraction' : 'number'; }));
@@ -761,17 +793,30 @@ function renderSettings(){
   c.appendChild(h('button', {class:'btn-outline', style:'margin-bottom:10px;', onclick: () => { goTo('colorSetting'); render(); }}, ['🎨 番号の色を設定']));
 
   c.appendChild(h('div', {style:'height:10px;'}));
-  c.appendChild(h('button', {class:'btn btn-ink serif', style:'margin-bottom:10px;', onclick: () => {
-    s.mode = 'FULL';
-    goTo('playerSelect');
-    render();
-  }}, ['🏇 フルモード']));
-  c.appendChild(h('button', {class:'btn btn-brown serif', onclick: () => {
-    s.mode = 'SCRATCH';
-    startRound();
-    goTo('race');
-    render();
-  }}, ['🎰 スクラッチ専用モード']));
+  if(state.isInProgress){
+    c.appendChild(h('div', {class:'info-box', style:'border-color:#8B1A1A;'}, [
+      '🎲 レース進行中です\n右下の⚙ボタンでいつでもここに戻れます。賭け点数・確率・効果音・配当表示は今すぐ反映されます。'
+    ]));
+    c.appendChild(h('button', {class:'btn btn-ink serif', style:'margin-bottom:10px;', onclick: () => { goBack(); }}, ['▶ 中断中のレースに戻る']));
+    c.appendChild(h('button', {class:'btn-outline', style:'color:#8B1A1A;border-color:#8B1A1A;', onclick: () => {
+      showModal('最初からやり直しますか？', '現在の進行状況（履歴・得点・回戦数）はすべて消去されます。', 'リセットする', () => {
+        resetAll(); goToRoot('settings');
+      });
+    }}, ['⚠ リセットして最初から']));
+  } else {
+    c.appendChild(h('button', {class:'btn btn-ink serif', style:'margin-bottom:10px;', onclick: () => {
+      s.mode = 'FULL';
+      goTo('playerSelect');
+      render();
+    }}, ['🏇 フルモード']));
+    c.appendChild(h('button', {class:'btn btn-brown serif', onclick: () => {
+      s.mode = 'SCRATCH';
+      startRound();
+      state.isInProgress = true;
+      goTo('race');
+      render();
+    }}, ['🎰 スクラッチ専用モード']));
+  }
 
   return c;
 }
@@ -860,6 +905,15 @@ function renderPlayerSelect(){
   c.appendChild(headerStamp());
   c.appendChild(h('div', {class:'screen-title serif'}, ['参加者選択']));
   c.appendChild(h('hr', {class:'thin-divider'}));
+
+  c.appendChild(h('div', {class:'info-box', style:'margin-bottom:10px;'}, [
+    '① 下の「新しい名前」欄に名前を入力し、＋ボタン（またはEnterキー）でリストに追加します。\n' +
+    '② 追加した名前は自動で保存され、次回以降も一覧に残ります。\n' +
+    '③ 一覧からタップした名前が黒色＝今回の参加者になります。もう一度タップすると選択解除できます。\n' +
+    '④ 名前の右の✕でリストから完全に削除できます（参加者リストからの除外ではなく完全削除です）。\n' +
+    '参加者は設定した「参加人数」まで選べます。2人以上選択すれば次へ進めます。'
+  ]));
+
   c.appendChild(h('div', {style:'font-size:12px;'}, ['タップして参加者を選択（' + state.activePlayerIds.length + '/' + state.settings.playerCount + '人）']));
 
   const inputRow = h('div', {class:'input-row'});
@@ -907,6 +961,23 @@ function renderAssign(){
   c.appendChild(h('button', {class:'btn btn-green', style:'height:44px;margin-bottom:16px;', onclick: () => { assignRandom(); render(); }}, ['🎲 ランダムで割当']));
 
   c.appendChild(h('div', {style:'font-size:13px;font-weight:700;margin-bottom:6px;'}, ['① 名前を選択（1人で複数枚OK）']));
+  c.appendChild(h('div', {class:'info-box', style:'margin-bottom:10px;'}, [
+    '名前をタップすると赤色＝選択中になります。その状態で下の②の番号をタップすると、この人に番号が割り当てられます。\n' +
+    '割り当てが完了した名前は黒色＝割当済みに変わり、名前の横の（　）内に持っている番号が表示されます。\n' +
+    '割当済み（黒色）の名前も再度タップすれば選択中（赤色）に戻り、番号を追加で割り当てられます。\n' +
+    '灰色のままの名前はまだ何も割り当てられていません。'
+  ]));
+  const legend = h('div', {style:'display:flex;gap:14px;margin-bottom:10px;font-size:11px;'});
+  legend.appendChild(h('div', {style:'display:flex;align-items:center;gap:4px;'}, [
+    h('span', {style:'width:12px;height:12px;border-radius:20px;background:var(--tan);border:1px solid var(--ink);display:inline-block;'}), '未割当'
+  ]));
+  legend.appendChild(h('div', {style:'display:flex;align-items:center;gap:4px;'}, [
+    h('span', {style:'width:12px;height:12px;border-radius:20px;background:var(--red);display:inline-block;'}), '選択中'
+  ]));
+  legend.appendChild(h('div', {style:'display:flex;align-items:center;gap:4px;'}, [
+    h('span', {style:'width:12px;height:12px;border-radius:20px;background:var(--ink);display:inline-block;'}), '割当済み'
+  ]));
+  c.appendChild(legend);
   const chipRow = h('div', {class:'flow-row'});
   players.forEach(p => {
     const myNumbers = state.assignments.filter(a => a.playerId === p.id).map(a => a.number).sort((a,b)=>a-b);
@@ -957,7 +1028,7 @@ function renderAssign(){
   });
 
   c.appendChild(h('div', {style:'height:20px;'}));
-  const startBtn = h('button', {class:'btn btn-ink serif', onclick: () => { startRound(); goTo('race'); render(); }}, ['レース開始！ →']);
+  const startBtn = h('button', {class:'btn btn-ink serif', onclick: () => { startRound(); state.isInProgress = true; goTo('race'); render(); }}, ['レース開始！ →']);
   if(state.assignments.length !== n) startBtn.disabled = true;
   c.appendChild(startBtn);
   return c;
@@ -1091,6 +1162,7 @@ function renderScratchResult(){
   const last = state.scratchOnlyHistory[state.scratchOnlyHistory.length - 1];
   if(!last) return c;
   const stats = getScratchStats();
+  const winCounts = getScratchWinCounts();
   const currentSetCount = state.scratchOnlyHistory.filter(h2 => h2.setNumber === last.setNumber).length;
   const isSetComplete = currentSetCount >= state.settings.roundsPerSet;
 
@@ -1116,10 +1188,11 @@ function renderScratchResult(){
   c.appendChild(h('div', {style:'font-size:12px;margin-bottom:8px;'}, ['現在：' + last.setNumber + 'セット目　' + currentSetCount + '/' + state.settings.roundsPerSet + '枚完了']));
 
   const statBox = h('div', {class:'info-box'});
-  statBox.appendChild(h('div', {style:'font-weight:700;font-size:12px;margin-bottom:6px;'}, ['番号別 累計配当合計']));
+  statBox.appendChild(h('div', {style:'font-weight:700;font-size:12px;margin-bottom:2px;'}, ['番号別 累計配当合計 ／ 当選回数']));
+  statBox.appendChild(h('div', {style:'font-size:10px;color:#777;margin-bottom:6px;'}, ['上段＝配当合計（赤）　下段＝当選回数（黒・回）']));
   const nums = [...Array(last.denominator).keys()].map(i => i+1);
   for(let i=0; i<nums.length; i+=4){
-    const row = h('div', {style:'display:flex;justify-content:space-evenly;margin-bottom:4px;'});
+    const row = h('div', {style:'display:flex;justify-content:space-evenly;margin-bottom:6px;'});
     nums.slice(i, i+4).forEach(num => {
       const dot = state.numberColors[num];
       const col = h('div', {style:'flex:1;text-align:center;'});
@@ -1128,6 +1201,7 @@ function renderScratchResult(){
       label.appendChild(h('span', {style:'font-size:10px;font-weight:700;'}, [String(num)]));
       col.appendChild(label);
       col.appendChild(h('div', {style:'font-size:12px;color:#8B1A1A;font-weight:800;'}, [String(stats[num] || 0)]));
+      col.appendChild(h('div', {style:'font-size:10px;color:#1A1008;font-weight:700;'}, [(winCounts[num] || 0) + '回']));
       row.appendChild(col);
     });
     statBox.appendChild(row);
@@ -1162,6 +1236,9 @@ function render(){
 
   if(navStack.length > 0){
     app.appendChild(h('button', {class:'back-btn', title:'一つ前の画面へ戻る', onclick: goBack}, ['←']));
+  }
+  if(screen !== 'settings'){
+    app.appendChild(h('button', {class:'settings-btn', title:'設定を確認する（進行状況は保持されます）', onclick: () => { goTo('settings'); render(); }}, ['⚙']));
   }
 }
 
