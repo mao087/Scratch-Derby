@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>WINNERS &amp; PAYOUT - カミケバ</title>
+<title>WINNERS &amp; PAYOUT - Raffle potScratch</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -420,7 +420,8 @@ let state = {
   settings: {
     mode: 'FULL', playerCount: 8, winnerCount: 3, setCount: 10, roundsPerSet: 30,
     betPoints: 1, soundEnabled: true, minGuaranteeProbability: 80, jackpotProbability: 5,
-    allowDuplicateNumbers: false, oddsDisplayMode: 'number' // 'number' = 数字のみ(デフォルト) / 'fraction' = 分数
+    allowDuplicateNumbers: false, oddsDisplayMode: 'number', // 'number' = 数字のみ(デフォルト) / 'fraction' = 分数
+    scratchMemberSelect: false // ON＝スクラッチ専用モードもメンバーリストからエントリーを選出してから開始
   },
   savedPlayers: [],       // {id, name}
   activePlayerIds: [],
@@ -487,6 +488,22 @@ function getScratchWinCounts(){
   });
   return counts;
 }
+// 番号ごとの当選記録に紐づけたエントリーメンバー別の獲得配当統計
+function getScratchPlayerStats(){
+  const stats = {}; // name -> {payout, wins}
+  state.scratchOnlyHistory.forEach(h => {
+    const assign = h.winnerAssignments || {};
+    h.winnerNumbers.forEach((num, i) => {
+      const name = assign[num];
+      if(!name) return;
+      const odds = h.oddsValues[i] || 0;
+      if(!stats[name]) stats[name] = { payout:0, wins:0 };
+      stats[name].payout += odds;
+      stats[name].wins += 1;
+    });
+  });
+  return stats;
+}
 
 /* ---------- actions ---------- */
 function addPlayerName(name){
@@ -544,17 +561,25 @@ function completeScratchOnly(){
   const wNums = winnerCells(card).map(c => parseInt(c.hiddenValue, 10));
   const oddsValues = oddsCells(card).map(c => c.hiddenValue === '0' ? 0 : parseInt(c.hiddenValue.split('/')[0], 10));
   const currentCount = state.scratchOnlyHistory.filter(h => h.setNumber === state.currentSet).length + 1;
-  state.scratchOnlyHistory.push({ setNumber: state.currentSet, scratchNumber: currentCount, winnerNumbers: wNums, oddsValues, denominator: state.settings.playerCount });
+  state.scratchOnlyHistory.push({ setNumber: state.currentSet, scratchNumber: currentCount, winnerNumbers: wNums, oddsValues, denominator: state.settings.playerCount, winnerAssignments: {} });
   if(currentCount >= state.settings.roundsPerSet) state.currentSet += 1;
   state.currentCard = null;
+}
+// スクラッチ削り終わり後、当選ナンバーに対して名前ボタンでエントリーメンバーを記録する
+function setScratchWinnerAssignment(historyIndex, number, playerName){
+  const entry = state.scratchOnlyHistory[historyIndex];
+  if(!entry) return;
+  if(!entry.winnerAssignments) entry.winnerAssignments = {};
+  if(playerName) entry.winnerAssignments[number] = playerName;
+  else delete entry.winnerAssignments[number];
 }
 function toggleSound(){ state.settings.soundEnabled = !state.settings.soundEnabled; }
 function setNumberColor(num, hex){ state.numberColors[num] = hex; }
 function resetNumberColor(num){ delete state.numberColors[num]; }
 function resetAll(){
-  const saved = state.savedPlayers, colors = state.numberColors, allowDup = state.settings.allowDuplicateNumbers, oddsMode = state.settings.oddsDisplayMode;
+  const saved = state.savedPlayers, colors = state.numberColors, allowDup = state.settings.allowDuplicateNumbers, oddsMode = state.settings.oddsDisplayMode, scratchSel = state.settings.scratchMemberSelect;
   state = {
-    settings: { mode:'FULL', playerCount:8, winnerCount:3, setCount:10, roundsPerSet:30, betPoints:1, soundEnabled:true, minGuaranteeProbability:80, jackpotProbability:5, allowDuplicateNumbers: allowDup, oddsDisplayMode: oddsMode },
+    settings: { mode:'FULL', playerCount:8, winnerCount:3, setCount:10, roundsPerSet:30, betPoints:1, soundEnabled:true, minGuaranteeProbability:80, jackpotProbability:5, allowDuplicateNumbers: allowDup, oddsDisplayMode: oddsMode, scratchMemberSelect: scratchSel },
     savedPlayers: saved, activePlayerIds: [], assignments: [], currentSet:1, currentRound:1, currentCard:null,
     history: [], scratchOnlyHistory: [], numberColors: colors, isInProgress: false
   };
@@ -768,6 +793,8 @@ function renderSettings(){
   c.appendChild(toggleRow('効果音', null, s.soundEnabled, (v)=>{ s.soundEnabled = v; }));
   c.appendChild(toggleRow('配当を分数で表示', 'OFF＝数字のみ（例：3）／ON＝分数（例：3/8）', s.oddsDisplayMode === 'fraction',
     (v)=>{ s.oddsDisplayMode = v ? 'fraction' : 'number'; }));
+  c.appendChild(toggleRow('スクラッチでもメンバー選出', 'ON＝スクラッチ専用モード開始前にメンバーリストからエントリーを選出／OFF＝保存済み全員が対象',
+    s.scratchMemberSelect, (v)=>{ s.scratchMemberSelect = v; }, midGame));
 
   let showAdvanced = state._showAdvanced || false;
   const advToggle = h('button', {class:'btn-outline', style:'margin-bottom:8px;', onclick: ()=>{ state._showAdvanced = !showAdvanced; render(); }},
@@ -811,9 +838,13 @@ function renderSettings(){
     }}, ['🏇 フルモード']));
     c.appendChild(h('button', {class:'btn btn-brown serif', onclick: () => {
       s.mode = 'SCRATCH';
-      startRound();
-      state.isInProgress = true;
-      goTo('race');
+      if(s.scratchMemberSelect){
+        goTo('playerSelect');
+      } else {
+        startRound();
+        state.isInProgress = true;
+        goTo('race');
+      }
       render();
     }}, ['🎰 スクラッチ専用モード']));
   }
@@ -902,6 +933,7 @@ function renderColorSetting(){
 
 function renderPlayerSelect(){
   const c = h('div', {class:'screen'});
+  const isScratch = state.settings.mode === 'SCRATCH';
   c.appendChild(headerStamp());
   c.appendChild(h('div', {class:'screen-title serif'}, ['参加者選択']));
   c.appendChild(h('hr', {class:'thin-divider'}));
@@ -911,10 +943,16 @@ function renderPlayerSelect(){
     '② 追加した名前は自動で保存され、次回以降も一覧に残ります。\n' +
     '③ 一覧からタップした名前が黒色＝今回の参加者になります。もう一度タップすると選択解除できます。\n' +
     '④ 名前の右の✕でリストから完全に削除できます（参加者リストからの除外ではなく完全削除です）。\n' +
-    '参加者は設定した「参加人数」まで選べます。2人以上選択すれば次へ進めます。'
+    (isScratch
+      ? 'スクラッチ専用モードでは選出した参加者が、当選番号への記録ボタンの候補になります。2人以上選択すれば次へ進めます。'
+      : '参加者は設定した「参加人数」まで選べます。2人以上選択すれば次へ進めます。')
   ]));
 
-  c.appendChild(h('div', {style:'font-size:12px;'}, ['タップして参加者を選択（' + state.activePlayerIds.length + '/' + state.settings.playerCount + '人）']));
+  c.appendChild(h('div', {style:'font-size:12px;'}, [
+    isScratch
+      ? 'タップして参加者を選択（' + state.activePlayerIds.length + '人）'
+      : 'タップして参加者を選択（' + state.activePlayerIds.length + '/' + state.settings.playerCount + '人）'
+  ]));
 
   const inputRow = h('div', {class:'input-row'});
   const input = h('input', {type:'text', placeholder:'新しい名前'});
@@ -942,9 +980,18 @@ function renderPlayerSelect(){
   c.appendChild(h('div', {style:'height:16px;'}));
   c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => {
     if(state.activePlayerIds.length < 2){ state._playerError = '2人以上選んでください'; }
-    else { state._playerError = ''; goTo('assign'); }
+    else {
+      state._playerError = '';
+      if(isScratch){
+        startRound();
+        state.isInProgress = true;
+        goTo('race');
+      } else {
+        goTo('assign');
+      }
+    }
     render();
-  }}, ['番号割当へ →']));
+  }}, [isScratch ? 'スクラッチ開始 →' : '番号割当へ →']));
   return c;
 }
 
@@ -1165,10 +1212,47 @@ function renderScratchResult(){
   const winCounts = getScratchWinCounts();
   const currentSetCount = state.scratchOnlyHistory.filter(h2 => h2.setNumber === last.setNumber).length;
   const isSetComplete = currentSetCount >= state.settings.roundsPerSet;
+  const memberSelectMode = state.settings.scratchMemberSelect;
+  const rosterPlayers = memberSelectMode ? activePlayers() : state.savedPlayers;
 
   c.appendChild(headerStamp());
   c.appendChild(h('div', {class:'serif', style:'text-align:center;font-size:15px;font-weight:700;margin-bottom:4px;'}, [last.setNumber + 'セット目　' + last.scratchNumber + '枚目　結果']));
   c.appendChild(h('hr', {class:'thin-divider'}));
+
+  /* ---- エントリーメンバー管理（配当集計用） ---- */
+  if(memberSelectMode){
+    const rosterBox = h('div', {style:'border:1px solid var(--ink);border-radius:4px;padding:10px;margin-bottom:12px;font-size:12px;'});
+    rosterBox.appendChild(h('div', {style:'font-weight:700;margin-bottom:4px;'}, ['エントリー中のメンバー（開始時に選出）']));
+    rosterBox.appendChild(h('div', {style:'color:#555;'}, [rosterPlayers.length ? rosterPlayers.map(p=>p.name).join('、') : '（選出されていません）']));
+    c.appendChild(rosterBox);
+  } else {
+    state._showMemberManage = state._showMemberManage ?? (state.savedPlayers.length === 0);
+    const memberToggle = h('button', {class:'btn-outline', style:'margin-bottom:8px;', onclick: () => { state._showMemberManage = !state._showMemberManage; render(); }},
+      [state._showMemberManage ? '▲ エントリーメンバー管理を閉じる' : '▼ エントリーメンバー管理（配当集計用）']);
+    c.appendChild(memberToggle);
+    if(state._showMemberManage){
+      const memberBox = h('div', {style:'border:1px solid var(--ink);border-radius:4px;padding:10px;margin-bottom:12px;'});
+      memberBox.appendChild(h('div', {style:'font-size:11px;color:#777;margin-bottom:8px;'}, ['ここで登録した名前が、下の「当選番号」に対する記録ボタンとして表示されます。']));
+      const mInputRow = h('div', {style:'display:flex;gap:6px;margin-bottom:8px;'});
+      const mInput = h('input', {type:'text', placeholder:'名前を追加', style:'flex:1;border:1px solid var(--gray);border-radius:4px;padding:8px 10px;font-size:13px;background:transparent;color:var(--ink);font-family:inherit;'});
+      mInputRow.appendChild(mInput);
+      const mAddBtn = h('button', {style:'width:40px;border:none;border-radius:4px;background:var(--ink);color:var(--cream);font-size:18px;cursor:pointer;flex-shrink:0;', onclick: () => { addPlayerName(mInput.value); render(); }}, ['＋']);
+      mInput.addEventListener('keydown', e => { if(e.key === 'Enter'){ addPlayerName(mInput.value); render(); } });
+      mInputRow.appendChild(mAddBtn);
+      memberBox.appendChild(mInputRow);
+      if(state.savedPlayers.length){
+        const mList = h('div', {style:'display:flex;flex-wrap:wrap;gap:6px;'});
+        state.savedPlayers.forEach(p => {
+          const chip = h('div', {style:'display:flex;align-items:center;gap:4px;padding:5px 10px;border:1px solid var(--ink);border-radius:14px;font-size:12px;background:var(--tan);'});
+          chip.appendChild(h('span', {}, [p.name]));
+          chip.appendChild(h('button', {style:'background:none;border:none;color:var(--red);cursor:pointer;font-size:11px;padding:0;line-height:1;', onclick: () => { removePlayerName(p.id); render(); }}, ['✕']));
+          mList.appendChild(chip);
+        });
+        memberBox.appendChild(mList);
+      }
+      c.appendChild(memberBox);
+    }
+  }
 
   c.appendChild(h('div', {class:'screen-title serif', style:'font-size:14px;'}, ['今回の結果']));
   last.winnerNumbers.forEach((num, i) => {
@@ -1181,6 +1265,25 @@ function renderScratchResult(){
     row.appendChild(left);
     row.appendChild(h('span', {style:'font-size:14px;'}, [odds===0?'0':displayOddsCellValue(odds+'/'+last.denominator)]));
     c.appendChild(row);
+
+    const nameRow = h('div', {style:'display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px 2px;'});
+    if(rosterPlayers.length === 0){
+      nameRow.appendChild(h('span', {style:'font-size:11px;color:#999;'}, [
+        memberSelectMode ? '↑ メンバーが選出されていません' : '↑「エントリーメンバー管理」から名前を登録すると、ここに記録ボタンが表示されます'
+      ]));
+    } else {
+      const assignedName = (last.winnerAssignments || {})[num];
+      rosterPlayers.forEach(p => {
+        const isSel = assignedName === p.name;
+        nameRow.appendChild(h('button', {class:'chip' + (isSel ? ' selected' : ''), style:'padding:6px 12px;font-size:12px;',
+          onclick: () => {
+            setScratchWinnerAssignment(state.scratchOnlyHistory.length - 1, num, isSel ? null : p.name);
+            render();
+          }
+        }, [p.name]));
+      });
+    }
+    c.appendChild(nameRow);
   });
 
   c.appendChild(h('div', {style:'height:14px;'}));
@@ -1207,6 +1310,21 @@ function renderScratchResult(){
     statBox.appendChild(row);
   }
   c.appendChild(statBox);
+
+  if(rosterPlayers.length){
+    c.appendChild(h('div', {style:'height:10px;'}));
+    c.appendChild(h('div', {class:'screen-title serif', style:'font-size:13px;'}, ['エントリーメンバー別　獲得配当統計']));
+    const playerStats = getScratchPlayerStats();
+    const pBox = h('div', {class:'info-box'});
+    const ranked = rosterPlayers.map(p => [p.name, playerStats[p.name] || {payout:0, wins:0}]).sort((a,b) => b[1].payout - a[1].payout);
+    ranked.forEach(([name, st]) => {
+      const row = h('div', {style:'display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:2px 0;'});
+      row.appendChild(h('span', {style:'font-weight:700;'}, [name]));
+      row.appendChild(h('span', {style:'color:#8B1A1A;font-weight:700;'}, [st.payout + '点　（' + st.wins + '回）']));
+      pBox.appendChild(row);
+    });
+    c.appendChild(pBox);
+  }
 
   c.appendChild(h('div', {style:'height:20px;'}));
   if(isSetComplete && state.currentSet > state.settings.setCount){
