@@ -302,12 +302,6 @@
 </div>
 
 <script>
-/* =========================================================
-   カミケバ (WINNERS & PAYOUT) — Web port
-   Ported from Android/Kotlin Jetpack Compose source
-   ========================================================= */
-
-/* ---------- utils ---------- */
 function randInt(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
 function shuffle(arr){
   const a = arr.slice();
@@ -328,7 +322,6 @@ function hexLuminance(hex){
 function textColorFor(hex){ return hexLuminance(hex) > 0.55 ? '#000000' : '#F5F0E8'; }
 function uid(){ return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
-/* ---------- game logic (ported from GameModel.kt) ---------- */
 function fullyRandomOdds(total, count){
   const result = new Array(count).fill(0);
   let remaining = total;
@@ -379,7 +372,6 @@ function generateRaceCard(settings){
 }
 function winnerCells(card){ return card.cells.filter(c => c.isWinner).sort((a,b) => a.rowIndex - b.rowIndex); }
 function oddsCells(card){ return card.cells.filter(c => !c.isWinner).sort((a,b) => a.rowIndex - b.rowIndex); }
-function allScratched(card){ return card.cells.every(c => c.isScratched); }
 
 function calcResults(assignments, card, betPoints){
   const n = card.denominator;
@@ -397,219 +389,28 @@ function calcResults(assignments, card, betPoints){
   results.sort((a,b) => b.score - a.score);
   return results;
 }
-function oddsDisplay(r){
-  if(r.oddsNumerator === 0) return '0';
-  return state.settings.oddsDisplayMode === 'fraction' ? (r.oddsNumerator + '/' + r.denominator) : String(r.oddsNumerator);
-}
-// スクラッチマスの配当セル用: hiddenValue("3/8" or "0")を設定に応じて整形
-function displayOddsCellValue(hiddenValue){
-  if(hiddenValue === '0') return '0';
-  const numerator = hiddenValue.split('/')[0];
-  return state.settings.oddsDisplayMode === 'fraction' ? hiddenValue : numerator;
-}
 
-function randomAssign(players, playerCount, allowDuplicate){
-  if(players.length === 0) return [];
-  const result = [];
-  const numbers = shuffle([...Array(playerCount).keys()].map(i => i+1));
-  const shuffledPlayers = shuffle(players);
-  if(allowDuplicate){
-    numbers.forEach(num => {
-      const p = shuffledPlayers[randInt(0, shuffledPlayers.length - 1)];
-      result.push({ playerId: p.id, playerName: p.name, number: num });
-    });
-  } else {
-    numbers.forEach((num, i) => {
-      const p = shuffledPlayers[i % shuffledPlayers.length];
-      result.push({ playerId: p.id, playerName: p.name, number: num });
-    });
-  }
-  return result;
-}
-
-/* ---------- 24 color palette (from NumberColorScreen.kt) ---------- */
-const PALETTE_24 = [
-  "#FF0000","#FF4500","#FF8C00","#FFA500",
-  "#FFD700","#FFFF00","#ADFF2F","#00FF00",
-  "#00FA9A","#00FFFF","#00BFFF","#1E90FF",
-  "#0000FF","#8A2BE2","#FF00FF","#FF1493",
-  "#FF69B4","#FFFFFF","#D3D3D3","#808080",
-  "#404040","#000000","#8B4513","#A0522D"
-];
-
-/* ---------- state (mirrors GameState / GameViewModel, in-memory only) ---------- */
 let state = {
   settings: {
     mode: 'FULL', playerCount: 8, winnerCount: 3, setCount: 10, roundsPerSet: 30,
     betPoints: 1, soundEnabled: true, minGuaranteeProbability: 80, jackpotProbability: 5,
-    allowDuplicateNumbers: false, oddsDisplayMode: 'number', // 'number' = 数字のみ(デフォルト) / 'fraction' = 分数
-    scratchMemberSelect: false // ON＝スクラッチ専用モードもメンバーリストからエントリーを選出してから開始
+    allowDuplicateNumbers: false, oddsDisplayMode: 'number',
+    scratchMemberSelect: false
   },
-  savedPlayers: [],       // {id, name}
+  savedPlayers: [],
   activePlayerIds: [],
-  assignments: [],        // {playerId, playerName, number}
+  assignments: [],
   currentSet: 1,
   currentRound: 1,
   currentCard: null,
-  history: [],             // RoundHistory
-  scratchOnlyHistory: [],  // ScratchOnlyHistory
-  numberColors: {},        // number -> hex
-  isInProgress: false      // ゲーム進行中かどうか(設定画面の表示切替に使用)
+  history: [],
+  scratchOnlyHistory: [],
+  numberColors: {},
+  isInProgress: false
 };
-let nextPlayerId = 1;
 let screen = 'settings';
-let navStack = []; // 「戻る」ボタン用の画面履歴
 
-function goTo(newScreen){
-  navStack.push(screen);
-  screen = newScreen;
-}
-function goToRoot(newScreen){
-  navStack = [];
-  screen = newScreen;
-}
-function goBack(){
-  if(navStack.length === 0) return;
-  screen = navStack.pop();
-  render();
-}
-
-function activePlayers(){ return state.savedPlayers.filter(p => state.activePlayerIds.includes(p.id)); }
-function totalRounds(){ return state.settings.setCount * state.settings.roundsPerSet; }
-function completedRounds(){ return state.history.length; }
-function isGameFinished(){ return completedRounds() >= totalRounds(); }
-function progressText(){ return state.currentSet + 'セット目 ' + state.currentRound + '回戦'; }
-function scratchProgress(){
-  const done = state.scratchOnlyHistory.filter(h => h.setNumber === state.currentSet).length;
-  return state.currentSet + 'セット目 ' + done + '/' + state.settings.roundsPerSet + '枚';
-}
-
-function getTotalScores(){
-  return activePlayers().map(p => {
-    const total = state.history.reduce((sum, round) =>
-      sum + round.results.filter(r => r.playerName === p.name).reduce((s,r) => s + r.score, 0), 0);
-    return [p.name, total];
-  }).sort((a,b) => b[1] - a[1]);
-}
-function getScratchStats(){
-  const stats = {};
-  state.scratchOnlyHistory.forEach(h => {
-    h.winnerNumbers.forEach((num, i) => {
-      const odds = h.oddsValues[i] || 0;
-      stats[num] = (stats[num] || 0) + odds;
-    });
-  });
-  return stats;
-}
-function getScratchWinCounts(){
-  const counts = {};
-  state.scratchOnlyHistory.forEach(h => {
-    h.winnerNumbers.forEach(num => {
-      counts[num] = (counts[num] || 0) + 1;
-    });
-  });
-  return counts;
-}
-// 番号ごとの当選記録に紐づけたエントリーメンバー別の獲得配当統計
-function getScratchPlayerStats(){
-  const stats = {}; // name -> {payout, wins}
-  state.scratchOnlyHistory.forEach(h => {
-    const assign = h.winnerAssignments || {};
-    h.winnerNumbers.forEach((num, i) => {
-      const name = assign[num];
-      if(!name) return;
-      const odds = h.oddsValues[i] || 0;
-      if(!stats[name]) stats[name] = { payout:0, wins:0 };
-      stats[name].payout += odds;
-      stats[name].wins += 1;
-    });
-  });
-  return stats;
-}
-
-/* ---------- actions ---------- */
-function addPlayerName(name){
-  name = name.trim();
-  if(!name) return;
-  state.savedPlayers.push({ id: nextPlayerId++, name });
-}
-function removePlayerName(id){
-  state.savedPlayers = state.savedPlayers.filter(p => p.id !== id);
-  state.activePlayerIds = state.activePlayerIds.filter(pid => pid !== id);
-}
-function toggleActivePlayer(id){
-  if(state.activePlayerIds.includes(id)) state.activePlayerIds = state.activePlayerIds.filter(pid => pid !== id);
-  else state.activePlayerIds.push(id);
-}
-function assignNumberToPlayer(playerId, playerName, number){
-  const allowDup = state.settings.allowDuplicateNumbers;
-  let base = allowDup ? state.assignments : state.assignments.filter(a => a.number !== number);
-  const already = base.some(a => a.playerId === playerId && a.number === number);
-  if(!already) base = base.concat([{ playerId, playerName, number }]);
-  state.assignments = base;
-}
-function unassignNumber(number){ state.assignments = state.assignments.filter(a => a.number !== number); }
-function assignRandom(){ state.assignments = randomAssign(activePlayers(), state.settings.playerCount, state.settings.allowDuplicateNumbers); }
-function startRound(){ state.currentCard = generateRaceCard(state.settings); }
-function redoCurrentRound(){ state.currentCard = generateRaceCard(state.settings); }
-function scratchCellById(cellId){
-  if(!state.currentCard) return;
-  state.currentCard.cells = state.currentCard.cells.map(c => c.id === cellId && !c.isScratched ? {...c, isScratched:true} : c);
-}
-function revealAllWinnerCells(){ if(!state.currentCard) return; state.currentCard.cells = state.currentCard.cells.map(c => c.isWinner ? {...c, isScratched:true} : c); }
-function revealAllOddsCells(){ if(!state.currentCard) return; state.currentCard.cells = state.currentCard.cells.map(c => !c.isWinner ? {...c, isScratched:true} : c); }
-function revealAllCells(){ if(!state.currentCard) return; state.currentCard.cells = state.currentCard.cells.map(c => ({...c, isScratched:true})); }
-
-function completeRound(){
-  const card = state.currentCard; if(!card) return;
-  const results = calcResults(state.assignments, card, state.settings.betPoints);
-  const wNums = winnerCells(card).map(c => parseInt(c.hiddenValue, 10));
-  const oddsMap = {};
-  winnerCells(card).forEach(wc => {
-    const num = parseInt(wc.hiddenValue, 10);
-    const oc = oddsCells(card).find(c => c.rowIndex === wc.rowIndex);
-    const str = oc ? oc.hiddenValue : '0';
-    oddsMap[num] = str === '0' ? 0 : parseInt(str.split('/')[0], 10);
-  });
-  state.history.push({ setNumber: state.currentSet, roundNumber: state.currentRound, winnerNumbers: wNums, oddsMap, denominator: state.settings.playerCount, results });
-  const nextRound = state.currentRound + 1;
-  if(nextRound > state.settings.roundsPerSet){ state.currentSet += 1; state.currentRound = 1; }
-  else state.currentRound = nextRound;
-  state.currentCard = null;
-  state.assignments = [];
-}
-function completeScratchOnly(){
-  const card = state.currentCard; if(!card) return;
-  const wNums = winnerCells(card).map(c => parseInt(c.hiddenValue, 10));
-  const oddsValues = oddsCells(card).map(c => c.hiddenValue === '0' ? 0 : parseInt(c.hiddenValue.split('/')[0], 10));
-  const currentCount = state.scratchOnlyHistory.filter(h => h.setNumber === state.currentSet).length + 1;
-  state.scratchOnlyHistory.push({ setNumber: state.currentSet, scratchNumber: currentCount, winnerNumbers: wNums, oddsValues, denominator: state.settings.playerCount, winnerAssignments: {} });
-  if(currentCount >= state.settings.roundsPerSet) state.currentSet += 1;
-  state.currentCard = null;
-}
-// スクラッチ削り終わり後、当選ナンバーに対して名前ボタンでエントリーメンバーを記録する
-function setScratchWinnerAssignment(historyIndex, number, playerName){
-  const entry = state.scratchOnlyHistory[historyIndex];
-  if(!entry) return;
-  if(!entry.winnerAssignments) entry.winnerAssignments = {};
-  if(playerName) entry.winnerAssignments[number] = playerName;
-  else delete entry.winnerAssignments[number];
-}
-function toggleSound(){ state.settings.soundEnabled = !state.settings.soundEnabled; }
-function setNumberColor(num, hex){ state.numberColors[num] = hex; }
-function resetNumberColor(num){ delete state.numberColors[num]; }
-function resetAll(){
-  const saved = state.savedPlayers, colors = state.numberColors, allowDup = state.settings.allowDuplicateNumbers, oddsMode = state.settings.oddsDisplayMode, scratchSel = state.settings.scratchMemberSelect;
-  state = {
-    settings: { mode:'FULL', playerCount:8, winnerCount:3, setCount:10, roundsPerSet:30, betPoints:1, soundEnabled:true, minGuaranteeProbability:80, jackpotProbability:5, allowDuplicateNumbers: allowDup, oddsDisplayMode: oddsMode, scratchMemberSelect: scratchSel },
-    savedPlayers: saved, activePlayerIds: [], assignments: [], currentSet:1, currentRound:1, currentCard:null,
-    history: [], scratchOnlyHistory: [], numberColors: colors, isInProgress: false
-  };
-}
-
-/* ---------- render helpers ---------- */
 const app = document.getElementById('app');
-function el(html){ const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
 function h(tag, attrs, children){
   const e = document.createElement(tag);
   if(attrs) for(const k in attrs){
@@ -621,143 +422,30 @@ function h(tag, attrs, children){
   (children||[]).forEach(c => { if(c) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
   return e;
 }
-function headerStamp(){
-  return h('div', {class:'header-wrap'}, [
+
+function renderSettingsScreen(){
+  const wrap = h('div', {class:'screen'});
+  wrap.appendChild(h('div', {class:'header-wrap'}, [
     h('div', {class:'header-title serif'}, ['WINNERS & PAYOUT']),
     h('hr', {class:'header-divider'})
-  ]);
-}
-function settingRow(label, value, min, max, unit, onMinus, onPlus, disabled){
-  const row = h('div', {class:'setting-row' + (disabled?' row-disabled':''), style: disabled ? 'opacity:0.45;' : ''});
-  row.appendChild(h('div', {class:'setting-label'}, [label]));
-  const stepper = h('div', {class:'stepper'});
-  const minusBtn = h('button', { onclick:()=>{ if(disabled) return; onMinus(); render(); } }, ['－']);
-  if(disabled || value<=min) minusBtn.disabled = true;
-  const plusBtn = h('button', { onclick:()=>{ if(disabled) return; onPlus(); render(); } }, ['＋']);
-  if(disabled || value>=max) plusBtn.disabled = true;
-  stepper.appendChild(minusBtn);
-  stepper.appendChild(h('div', {class:'val'}, [value + ' ' + unit]));
-  stepper.appendChild(plusBtn);
-  row.appendChild(stepper);
-  return row;
-}
-function toggleRow(label, sub, checked, onChange, disabled){
-  const row = h('div', {class:'toggle-row', style: disabled ? 'opacity:0.45;' : ''});
-  const left = h('div', {}, [h('div', {class:'setting-label'}, [label])]);
-  if(sub) left.appendChild(h('div', {class:'sub'}, [sub]));
-  row.appendChild(left);
-  const right = h('div', {style:'display:flex;align-items:center;'});
-  const labelSpan = h('span', {class:'switch-label', style: checked ? 'color:#8B1A1A' : 'color:#888'}, [checked ? 'ON' : 'OFF']);
-  right.appendChild(labelSpan);
-  const sw = h('label', {class:'switch'});
-  const input = h('input', {type:'checkbox'});
-  input.checked = checked;
-  input.disabled = !!disabled;
-  input.addEventListener('change', () => { if(disabled) return; onChange(input.checked); render(); });
-  sw.appendChild(input);
-  sw.appendChild(h('span', {class:'track'}));
-  right.appendChild(sw);
-  row.appendChild(right);
-  return row;
-}
-function resultRow(col1, col2, col3, col4, opts){
-  opts = opts || {};
-  const row = h('div', {class:'result-row' + (opts.header ? ' header':'') + (opts.highlight ? ' highlight':'')});
-  const c1 = h('div', {class:'r-col1' + (opts.highlight?' r-highlight':'')});
-  if(opts.dotColor){ c1.appendChild(h('span', {class:'dot', style:'background:'+opts.dotColor})); c1.appendChild(document.createTextNode(' ')); }
-  c1.appendChild(document.createTextNode(col1));
-  row.appendChild(c1);
-  row.appendChild(h('div', {class:'r-col2'+(opts.highlight?' r-highlight':'')}, [col2]));
-  row.appendChild(h('div', {class:'r-col3'+(opts.highlight?' r-highlight':'')}, [col3]));
-  row.appendChild(h('div', {class:'r-col4'+(opts.highlight?' r-highlight':'')}, [col4]));
-  return row;
-}
-function showModal(title, message, confirmLabel, onConfirm){
-  const backdrop = h('div', {class:'modal-backdrop'});
-  const box = h('div', {class:'modal-box'});
-  box.appendChild(h('h4', {}, [title]));
-  box.appendChild(h('p', {}, [message]));
-  const actions = h('div', {class:'modal-actions'});
-  actions.appendChild(h('button', {style:'color:#8B1A1A', onclick:()=>{ onConfirm(); backdrop.remove(); render(); }}, [confirmLabel]));
-  actions.appendChild(h('button', {style:'color:#1A1008', onclick:()=>backdrop.remove()}, ['キャンセル']));
-  box.appendChild(actions);
-  backdrop.appendChild(box);
-  document.body.appendChild(backdrop);
-}
+  ]));
+  wrap.appendChild(h('div', {class:'screen-title'}, ['基本設定']));
+  wrap.appendChild(h('hr', {class:'thin-divider'}));
 
-/* ---------- scratch cell (canvas scratch effect) ---------- */
-function buildScratchCell(cell){
-  const wrap = h('div', {class:'scratch-cell'});
-  const displayText = cell.isWinner ? cell.hiddenValue : displayOddsCellValue(cell.hiddenValue);
-  const isSmallText = displayText.includes('/');
-  wrap.appendChild(h('div', {class:'value' + (isSmallText?' small':'')}, [displayText]));
-  if(cell.isScratched) return wrap;
-
-  const canvas = document.createElement('canvas');
-  wrap.appendChild(canvas);
-
-  let ctx, revealed = false, points = 0, dragging = false, clickCount = 0, clickTimer = null;
-
-  function setupCanvas(){
-    const rect = wrap.getBoundingClientRect();
-    canvas.width = Math.max(1, Math.round(rect.width));
-    canvas.height = Math.max(1, Math.round(rect.height));
-    ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#9E9E9E';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }
-  requestAnimationFrame(setupCanvas);
-
-  function reveal(){
-    if(revealed) return;
-    revealed = true;
-    canvas.style.transition = 'opacity .18s ease';
-    canvas.style.opacity = '0';
-    setTimeout(() => canvas.remove(), 180);
-    scratchCellById(cell.id);
-  }
-  function scratchAt(x, y){
-    if(!ctx) return;
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.beginPath();
-    ctx.arc(x, y, 13, 0, Math.PI*2);
-    ctx.fill();
-    points++;
-    if(points > 16) reveal();
-  }
-  function getPos(e){
-    const rect = canvas.getBoundingClientRect();
-    const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-    const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-    return [cx, cy];
-  }
-  canvas.addEventListener('pointerdown', (e) => {
-    if(revealed) return;
-    dragging = true;
-    const [x,y] = getPos(e);
-    scratchAt(x, y);
-  });
-  canvas.addEventListener('pointermove', (e) => {
-    if(revealed || !dragging) return;
-    const [x,y] = getPos(e);
-    scratchAt(x, y);
-  });
-  window.addEventListener('pointerup', () => {
-    if(!dragging) return;
-    dragging = false;
-    if(points <= 1){
-      clickCount++;
-      if(clickTimer) clearTimeout(clickTimer);
-      if(clickCount >= 2) reveal();
-      else clickTimer = setTimeout(() => { clickCount = 0; }, 500);
+  const startBtn = h('button', {
+    class: 'btn btn-red',
+    onclick: () => {
+      alert('ゲーム機能の読み込みが完了しました！');
     }
-  });
+  }, ['ゲームを開始する']);
+  wrap.appendChild(startBtn);
+
   return wrap;
 }
 
-/* ---------- Dummy render function for app initialization ---------- */
 function render(){
-  app.innerHTML = '<div class="screen"><h3>WINNERS &amp; PAYOUT</h3><p>アプリが読み込まれました。</p></div>';
+  app.innerHTML = '';
+  app.appendChild(renderSettingsScreen());
 }
 render();
 </script>
