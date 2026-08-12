@@ -3,315 +3,735 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>WINNERS &amp; PAYOUT</title>
+<title>WINNERS &amp; PAYOUT - Raffle pot Scratch</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --ink:#1A1008;
-    --cream:#F5F0E8;
-    --tan:#E8DFD0;
-    --red:#8B1A1A;
-    --green:#2D5A1B;
-    --brown:#4A3828;
-    --gray:#8a8a8a;
-  }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0;min-height:100%;}
-  body{
-    font-family:'Zen Kaku Gothic New', sans-serif;
-    color:var(--ink);
-    background-color:var(--cream);
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-  }
-  .serif{font-family:'Shippori Mincho', serif;}
-  #app{
-    width:100%;
-    max-width:480px;
-    min-height:100vh;
-    position:relative;
-    background:var(--cream);
-    box-shadow:0 0 40px rgba(0,0,0,0.08);
-  }
-  .screen{
-    padding:20px 20px 32px;
-    animation:fadeIn .25s ease;
-  }
-  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+  :root{
+    --ink:#1A1008;
+    --cream:#F5F0E8;
+    --tan:#E8DFD0;
+    --red:#8B1A1A;
+    --green:#2D5A1B;
+    --brown:#4A3828;
+    --gray:#8a8a8a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    color:var(--ink);
+    background-color:var(--cream);
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(139,26,26,0.03) 0, transparent 45%),
+      radial-gradient(circle at 85% 80%, rgba(26,16,8,0.04) 0, transparent 45%),
+      repeating-linear-gradient(0deg, rgba(26,16,8,0.015) 0px, rgba(26,16,8,0.015) 1px, transparent 1px, transparent 3px);
+    min-height:100%;
+    display:flex;
+    justify-content:center;
+  }
+  .serif{font-family:'Shippori Mincho', serif;}
+  #app{
+    width:100%;
+    max-width:480px;
+    min-height:100vh;
+    position:relative;
+    background:var(--cream);
+    box-shadow:0 0 40px rgba(0,0,0,0.08);
+  }
+  .screen{
+    padding:20px 20px 32px;
+    animation:fadeIn .25s ease;
+  }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
 
-  /* ---------- ad container ---------- */
-  .ad-container{
-    width:100%;
-    max-width:480px;
-    text-align:center;
-    padding:12px 0 24px;
-    background:var(--cream);
-    margin:0 auto;
-  }
-  .ad-container img{
-    max-width:100%;
-    height:auto;
-  }
+  /* ---------- header stamp ---------- */
+  .header-wrap{ text-align:center; margin-bottom:8px; }
+  .header-title{
+    font-family:'Shippori Mincho', serif;
+    font-weight:800;
+    font-size:24px;
+    letter-spacing:3px;
+    color:var(--ink);
+    display:inline-block;
+    padding:0 6px;
+  }
+  .header-divider{ border:none; border-top:2px solid var(--ink); margin:8px 0 0; }
+  .screen-title{
+    font-family:'Shippori Mincho', serif;
+    font-weight:700; font-size:16px; margin:8px 0 4px;
+    text-align:left;
+  }
+  .thin-divider{ border:none; border-top:1px solid var(--ink); margin:0 0 12px; }
 
-  /* ---------- header ---------- */
-  .header-wrap{ text-align:center; margin-bottom:16px; }
-  .header-title{
-    font-family:'Shippori Mincho', serif;
-    font-weight:800;
-    font-size:26px;
-    letter-spacing:3px;
-    color:var(--ink);
-    display:inline-block;
-  }
-  .header-divider{ border:none; border-top:2px solid var(--ink); margin:8px 0 0; }
-  .screen-title{
-    font-family:'Shippori Mincho', serif;
-    font-weight:700; font-size:16px; margin:12px 0 4px;
-    text-align:left;
-  }
-  .thin-divider{ border:none; border-top:1px solid var(--ink); margin:0 0 16px; }
+  /* ---------- buttons ---------- */
+  .btn{
+    width:100%; height:52px; border:none; border-radius:4px;
+    font-family:'Shippori Mincho', serif; font-weight:700; font-size:16px;
+    cursor:pointer; letter-spacing:1px;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    transition:transform .08s ease, filter .15s ease;
+  }
+  .btn:active{ transform:scale(0.98); }
+  .btn:disabled{ opacity:0.4; cursor:not-allowed; }
+  .btn-ink{ background:var(--ink); color:var(--cream); }
+  .btn-brown{ background:var(--brown); color:var(--cream); }
+  .btn-green{ background:var(--green); color:#fff; }
+  .btn-red{ background:var(--red); color:#fff; }
+  .btn-outline{
+    background:transparent; border:1px solid var(--ink); color:var(--ink);
+    height:44px; border-radius:4px; font-size:13px; width:100%; cursor:pointer;
+  }
+  .btn-small{ height:36px; font-size:12px; border-radius:8px; font-family:'Zen Kaku Gothic New',sans-serif; font-weight:700; }
 
-  /* ---------- buttons ---------- */
-  .btn{
-    width:100%; height:52px; border:none; border-radius:4px;
-    font-family:'Shippori Mincho', serif; font-weight:700; font-size:16px;
-    cursor:pointer; letter-spacing:1px;
-    display:flex; align-items:center; justify-content:center; gap:6px;
-    margin-top:12px;
-  }
-  .btn:active{ transform:scale(0.98); }
-  .btn-red{ background:var(--red); color:#fff; }
-  .btn-ink{ background:var(--ink); color:var(--cream); }
+  /* ---------- setting row ---------- */
+  .setting-row{
+    display:flex; align-items:center; justify-content:space-between;
+    border:1px solid var(--ink); border-radius:4px;
+    padding:8px 14px; margin-bottom:8px;
+  }
+  .setting-label{ font-weight:700; font-size:14px; }
+  .stepper{ display:flex; align-items:center; gap:0; }
+  .stepper button{
+    width:34px; height:34px; border:none; border-radius:4px;
+    background:var(--ink); color:var(--cream); font-weight:700; font-size:16px; cursor:pointer;
+  }
+  .stepper button:disabled{ background:#c9c2b6; cursor:not-allowed; }
+  .stepper .val{ width:82px; text-align:center; font-size:15px; font-weight:800; }
 
-  /* ---------- setting row ---------- */
-  .setting-row{
-    display:flex; align-items:center; justify-content:space-between;
-    border:1px solid var(--ink); border-radius:4px;
-    padding:10px 14px; margin-bottom:12px;
-    background:var(--tan);
-  }
-  .setting-label{ font-weight:700; font-size:14px; }
-  .stepper{ display:flex; align-items:center; gap:0; }
-  .stepper button{
-    width:34px; height:34px; border:none; border-radius:4px;
-    background:var(--ink); color:var(--cream); font-weight:700; font-size:16px; cursor:pointer;
-  }
-  .stepper .val{ width:60px; text-align:center; font-size:15px; font-weight:800; }
+  .info-box{
+    border:1px solid var(--ink); border-radius:4px; background:var(--tan);
+    padding:10px; font-size:11px; line-height:1.6; margin-bottom:8px; white-space:pre-line;
+  }
+  .toggle-row{
+    display:flex; align-items:center; justify-content:space-between;
+    border:1px solid var(--ink); border-radius:4px; padding:8px 14px; margin-bottom:8px;
+  }
+  .toggle-row .sub{ font-size:10px; color:#777; }
+  .switch{ position:relative; width:42px; height:24px; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .switch .track{
+    position:absolute; inset:0; background:#c9c2b6; border-radius:24px; cursor:pointer; transition:.15s;
+  }
+  .switch .track::before{
+    content:''; position:absolute; width:18px; height:18px; left:3px; top:3px;
+    background:var(--cream); border-radius:50%; transition:.15s;
+  }
+  .switch input:checked + .track{ background:var(--red); }
+  .switch input:checked + .track::before{ transform:translateX(18px); }
+  .switch-label{ font-size:12px; margin-right:8px; }
 
-  /* ---------- race columns & scratch ---------- */
-  .race-columns{ display:flex; gap:12px; align-items:flex-start; margin-top:16px; }
-  .race-col{ flex:1; text-align:center; }
-  .race-col h3{ font-family:'Shippori Mincho', serif; font-weight:700; font-size:16px; margin:0 0 8px; }
-  .race-col .cells{ display:flex; flex-direction:column; gap:8px; }
-  
-  .scratch-cell{
-    position:relative; width:100%; height:50px; border:1.5px solid var(--ink); border-radius:4px;
-    overflow:hidden; background:var(--cream); user-select:none;
-  }
-  .scratch-cell .value{
-    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    font-family:'Shippori Mincho', serif; font-weight:700; font-size:20px; color:var(--ink);
-  }
-  .scratch-cell canvas{ position:absolute; inset:0; width:100%; height:100%; cursor:pointer; touch-action:none; }
+  .advanced-box{ border:1px solid var(--red); border-radius:4px; padding:12px; margin-bottom:8px; }
+  .advanced-box h4{ margin:0 0 10px; color:var(--red); font-size:13px; }
+  .slider-label{ font-size:12px; margin-bottom:2px; }
+  input[type=range]{ width:100%; accent-color:var(--red); margin-bottom:8px; }
+
+  /* ---------- flow row / chips ---------- */
+  .flow-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{
+    padding:10px 16px; border-radius:20px; border:1px solid var(--ink);
+    background:var(--tan); color:var(--ink); font-size:14px; font-weight:700; cursor:pointer;
+  }
+  .chip.filled{ background:var(--ink); color:var(--cream); }
+  .chip.selected{ background:var(--red); color:var(--cream); }
+
+  .num-circle{
+    width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:16px; cursor:pointer; border:none; position:relative;
+  }
+  .num-circle.disabled{ opacity:0.5; cursor:not-allowed; }
+  .num-circle.small{ width:36px; height:36px; font-size:13px; }
+
+  /* ---------- player select grid ---------- */
+  .player-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+  .player-card{
+    display:flex; align-items:center; justify-content:space-between;
+    border:1px solid var(--ink); border-radius:8px; background:var(--tan);
+    padding:14px 8px 14px 14px; cursor:pointer;
+  }
+  .player-card.selected{ background:var(--ink); color:var(--cream); }
+  .player-card .name{ font-weight:700; font-size:15px; }
+  .player-card button{
+    background:none; border:none; cursor:pointer; font-size:16px; color:inherit; opacity:.6; line-height:1;
+  }
+  .input-row{ display:flex; align-items:center; gap:8px; margin-top:12px; }
+  .input-row input{
+    flex:1; border:1px solid var(--gray); border-radius:4px; padding:12px 10px;
+    font-size:14px; background:transparent; color:var(--ink); font-family:inherit;
+  }
+  .input-row input:focus{ outline:none; border-color:var(--ink); }
+  .icon-btn{
+    width:46px; height:46px; border-radius:4px; background:var(--ink); color:var(--cream);
+    border:none; font-size:20px; cursor:pointer; flex-shrink:0;
+  }
+  .error-text{ color:var(--red); font-size:12px; margin-top:8px; }
+
+  /* ---------- assignment list ---------- */
+  .assign-item{
+    display:flex; align-items:center; justify-content:space-between;
+    border:1px solid var(--ink); border-radius:4px; padding:10px; margin-bottom:4px;
+  }
+  .assign-item .left{ display:flex; align-items:center; gap:6px; font-size:14px; }
+  .dot{ width:10px; height:10px; border-radius:50%; border:0.5px solid var(--ink); display:inline-block; }
+  .assign-item button{ background:none; border:none; color:var(--red); font-size:12px; cursor:pointer; }
+
+  /* ---------- race card ---------- */
+  .race-topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    background:rgba(26,16,8,0.92); color:var(--cream); padding:8px 14px;
+    margin:-20px -20px 0; font-family:'Shippori Mincho', serif; font-weight:700; font-size:13px;
+  }
+  .race-topbar .right{ display:flex; align-items:center; gap:10px; font-size:16px; }
+  .race-topbar .count{ font-size:10px; opacity:.7; font-family:'Zen Kaku Gothic New',sans-serif; }
+  .reveal-row{ display:flex; gap:6px; margin:10px 0 4px; }
+  .assign-strip{
+    display:flex; justify-content:space-evenly; flex-wrap:wrap; gap:6px;
+    border:1px solid var(--ink); border-radius:4px; background:rgba(245,240,232,0.9);
+    padding:6px; margin-bottom:10px;
+  }
+  .assign-strip .item{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .assign-strip .box{
+    width:28px; height:28px; border-radius:4px; border:1px solid var(--ink);
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:12px;
+  }
+  .assign-strip .pname{ font-size:9px; }
+
+  .race-columns{ display:flex; gap:10px; align-items:flex-start; }
+  .race-col{ flex:1; text-align:center; }
+  .race-col h3{
+    font-family:'Shippori Mincho', serif; font-weight:700; font-size:16px; letter-spacing:4px; margin:0 0 6px;
+  }
+  .race-col .cells{
+    border:1px solid var(--ink); border-radius:4px; background:rgba(245,240,232,0.85); padding:6px;
+    display:flex; flex-direction:column; gap:4px;
+  }
+  .scratch-cell{
+    position:relative; width:100%; height:48px; border:1.5px solid var(--ink); border-radius:2px;
+    overflow:hidden; background:var(--cream); user-select:none;
+  }
+  .scratch-cell .value{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Shippori Mincho', serif; font-weight:700; font-size:20px; color:var(--ink);
+  }
+  .scratch-cell .value.small{ font-size:13px; }
+  .scratch-cell canvas{ position:absolute; inset:0; width:100%; height:100%; cursor:pointer; touch-action:none; }
+  .remaining-text{ color:rgba(26,16,8,0.6); font-size:11px; text-align:center; margin:16px 0 20px; }
+
+  /* ---------- result screen ---------- */
+  .result-row{ display:flex; align-items:center; padding:6px 4px; }
+  .result-row.header{ font-weight:700; }
+  .result-row.highlight{ background:var(--tan); }
+  .r-col1{ width:44px; display:flex; align-items:center; gap:3px; font-size:13px; }
+  .r-col2{ flex:1; font-size:13px; }
+  .r-col3{ width:52px; text-align:center; font-size:13px; }
+  .r-col4{ width:52px; text-align:right; font-size:13px; }
+  .r-highlight{ color:var(--red); font-weight:700; }
+  .row-divider{ border:none; border-top:0.5px solid rgba(26,16,8,0.3); margin:0; }
+
+  /* ---------- toast / modal ---------- */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center;
+    z-index:100; padding:20px;
+  }
+  .modal-box{
+    background:var(--cream); border-radius:6px; padding:20px; max-width:340px; width:100%;
+    border:1px solid var(--ink);
+  }
+  .modal-box h4{ margin:0 0 8px; font-size:15px; font-family:'Shippori Mincho', serif; }
+  .modal-box p{ margin:0 0 16px; font-size:12px; color:#444; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:16px; }
+  .modal-actions button{ background:none; border:none; font-size:13px; cursor:pointer; font-weight:700; }
+
+  .finish-text{
+    text-align:center; font-family:'Shippori Mincho', serif; font-weight:800; font-size:20px; color:var(--red);
+    margin-bottom:14px;
+  }
+  ::-webkit-scrollbar{ width:0; height:0; }
+
+  /* ---------- back (return) button ---------- */
+  .back-btn{
+    position:fixed;
+    bottom:16px;
+    left:max(12px, calc(50% - 240px + 12px));
+    width:44px; height:44px; border-radius:50%;
+    background:rgba(26,16,8,0.85); color:#F5F0E8; border:none;
+    font-size:19px; cursor:pointer; z-index:50;
+    box-shadow:0 3px 10px rgba(0,0,0,0.35);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .back-btn:active{ transform:scale(0.92); }
+
+  /* ---------- settings shortcut button ---------- */
+  .settings-btn{
+    position:fixed;
+    bottom:16px;
+    right:max(12px, calc(50% - 240px + 12px));
+    width:44px; height:44px; border-radius:50%;
+    background:rgba(139,26,26,0.88); color:#F5F0E8; border:none;
+    font-size:19px; cursor:pointer; z-index:50;
+    box-shadow:0 3px 10px rgba(0,0,0,0.35);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .settings-btn:active{ transform:scale(0.92); }
 </style>
 </head>
 <body>
 <div id="app"></div>
 
-<!-- A8.net 広告エリア -->
-<div class="ad-container">
-  <a href="https://px.a8.net/svt/ejp?a8mat=4BA41A+1823JM+3A98+669JL" rel="nofollow">
-  <img border="0" width="468" height="60" alt="" src="https://www26.a8.net/svt/bgt?aid=260812270074&wid=001&eno=01&mid=s00000015326001037000&mc=1"></a>
-  <img border="0" width="1" height="1" src="https://www13.a8.net/0.gif?a8mat=4BA41A+1823JM+3A98+669JL" alt="">
-</div>
-
 <script>
-let state = {
-  screen: 'settings', // 'settings' | 'game'
-  playerCount: 8,
-  winnerCount: 3,
-  card: null
-};
+/* =========================================================
+   カミケバ (WINNERS & PAYOUT) — Web port
+   Ported from Android/Kotlin Jetpack Compose source
+   ========================================================= */
 
+/* ---------- utils ---------- */
 function randInt(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
 function shuffle(arr){
-  const a = arr.slice();
-  for(let i = a.length - 1; i > 0; i--){
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function hexLuminance(hex){
+  if(!hex) return 0;
+  const c = hex.replace('#','');
+  const r = parseInt(c.substring(0,2),16)/255;
+  const g = parseInt(c.substring(2,4),16)/255;
+  const b = parseInt(c.substring(4,6),16)/255;
+  return 0.2126*r + 0.7152*g + 0.0722*b;
+}
+function textColorFor(hex){ return hexLuminance(hex) > 0.55 ? '#000000' : '#F5F0E8'; }
+function uid(){ return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+
+/* ---------- game logic (ported from GameModel.kt) ---------- */
+function fullyRandomOdds(total, count){
+  const result = new Array(count).fill(0);
+  let remaining = total;
+  const order = shuffle([...Array(count).keys()]);
+  for(let i = 0; i < count - 1; i++){
+    const give = randInt(0, remaining);
+    result[order[i]] = give;
+    remaining -= give;
+  }
+  result[order[count-1]] = Math.max(remaining, 0);
+  return result;
+}
+function generateOdds(total, count, minGuaranteeProb, jackpotProb){
+  if(count === 0) return [];
+  const roll = randInt(1, 100);
+  if(roll <= jackpotProb){
+    const result = new Array(count).fill(0);
+    result[randInt(0, count-1)] = total;
+    return result;
+  } else if(roll <= jackpotProb + minGuaranteeProb){
+    if(total < count) return fullyRandomOdds(total, count);
+    const result = new Array(count).fill(1);
+    let remaining = total - count;
+    const order = shuffle([...Array(count).keys()]);
+    for(let i = 0; i < count - 1; i++){
+      const give = randInt(0, remaining);
+      result[order[i]] += give;
+      remaining -= give;
+    }
+    result[order[count-1]] += Math.max(remaining, 0);
+    return result;
+  } else {
+    return fullyRandomOdds(total, count);
+  }
+}
+function generateRaceCard(settings){
+  const n = settings.playerCount;
+  const w = settings.winnerCount;
+  const winnerNumbers = shuffle([...Array(n).keys()].map(i => i+1)).slice(0, w);
+  const odds = generateOdds(n, w, settings.minGuaranteeProbability, settings.jackpotProbability);
+  const cells = [];
+  winnerNumbers.forEach((num, i) => {
+    cells.push({ id: 'w_'+i+'_'+uid(), isWinner: true, rowIndex: i, hiddenValue: String(num), isScratched: false });
+    const o = odds[i];
+    cells.push({ id: 'o_'+i+'_'+uid(), isWinner: false, rowIndex: i, hiddenValue: o === 0 ? '0' : (o + '/' + n), isScratched: false });
+  });
+  return { cells, denominator: n };
+}
+function winnerCells(card){ return card.cells.filter(c => c.isWinner).sort((a,b) => a.rowIndex - b.rowIndex); }
+function oddsCells(card){ return card.cells.filter(c => !c.isWinner).sort((a,b) => a.rowIndex - b.rowIndex); }
+function allScratched(card){ return card.cells.every(c => c.isScratched); }
+
+function calcResults(assignments, card, betPoints){
+  const n = card.denominator;
+  const wc = winnerCells(card), oc = oddsCells(card);
+  const results = assignments.map(a => {
+    const win = wc.find(c => c.hiddenValue === String(a.number));
+    if(win){
+      const oddsCell = oc.find(c => c.rowIndex === win.rowIndex);
+      const oddsStr = oddsCell ? oddsCell.hiddenValue : '0';
+      const numerator = oddsStr === '0' ? 0 : parseInt(oddsStr.split('/')[0], 10);
+      return { playerName: a.playerName, number: a.number, isWinner: true, oddsNumerator: numerator, denominator: n, score: numerator * betPoints };
+    }
+    return { playerName: a.playerName, number: a.number, isWinner: false, oddsNumerator: 0, denominator: n, score: 0 };
+  });
+  results.sort((a,b) => b.score - a.score);
+  return results;
+}
+function oddsDisplay(r){
+  if(r.oddsNumerator === 0) return '0';
+  return state.settings.oddsDisplayMode === 'fraction' ? (r.oddsNumerator + '/' + r.denominator) : String(r.oddsNumerator);
+}
+// スクラッチマスの配当セル用: hiddenValue("3/8" or "0")を設定に応じて整形
+function displayOddsCellValue(hiddenValue){
+  if(hiddenValue === '0') return '0';
+  const numerator = hiddenValue.split('/')[0];
+  return state.settings.oddsDisplayMode === 'fraction' ? hiddenValue : numerator;
 }
 
-function generateCard(pCount, wCount){
-  const winnerNums = shuffle([...Array(pCount).keys()].map(i => i + 1)).slice(0, wCount);
-  const winners = winnerNums.map((num, idx) => ({ id: 'w_' + idx, value: String(num) }));
-  const odds = winnerNums.map((_, idx) => ({ id: 'o_' + idx, value: String(randInt(1, pCount)) }));
-  return { winners, odds };
+function randomAssign(players, playerCount, allowDuplicate){
+  if(players.length === 0) return [];
+  const result = [];
+  const numbers = shuffle([...Array(playerCount).keys()].map(i => i+1));
+  const shuffledPlayers = shuffle(players);
+  if(allowDuplicate){
+    numbers.forEach(num => {
+      const p = shuffledPlayers[randInt(0, shuffledPlayers.length - 1)];
+      result.push({ playerId: p.id, playerName: p.name, number: num });
+    });
+  } else {
+    numbers.forEach((num, i) => {
+      const p = shuffledPlayers[i % shuffledPlayers.length];
+      result.push({ playerId: p.id, playerName: p.name, number: num });
+    });
+  }
+  return result;
 }
 
+/* ---------- 24 color palette (from NumberColorScreen.kt) ---------- */
+const PALETTE_24 = [
+  "#FF0000","#FF4500","#FF8C00","#FFA500",
+  "#FFD700","#FFFF00","#ADFF2F","#00FF00",
+  "#00FA9A","#00FFFF","#00BFFF","#1E90FF",
+  "#0000FF","#8A2BE2","#FF00FF","#FF1493",
+  "#FF69B4","#FFFFFF","#D3D3D3","#808080",
+  "#404040","#000000","#8B4513","#A0522D"
+];
+
+/* ---------- state (mirrors GameState / GameViewModel, in-memory only) ---------- */
+let state = {
+  settings: {
+    mode: 'FULL', playerCount: 8, winnerCount: 3, setCount: 10, roundsPerSet: 30,
+    betPoints: 1, soundEnabled: true, minGuaranteeProbability: 80, jackpotProbability: 5,
+    allowDuplicateNumbers: false, oddsDisplayMode: 'number', // 'number' = 数字のみ(デフォルト) / 'fraction' = 分数
+    scratchMemberSelect: false // ON＝スクラッチ専用モードもメンバーリストからエントリーを選出してから開始
+  },
+  savedPlayers: [],       // {id, name}
+  activePlayerIds: [],
+  assignments: [],        // {playerId, playerName, number}
+  currentSet: 1,
+  currentRound: 1,
+  currentCard: null,
+  history: [],             // RoundHistory
+  scratchOnlyHistory: [],  // ScratchOnlyHistory
+  numberColors: {},        // number -> hex
+  isInProgress: false      // ゲーム進行中かどうか(設定画面の表示切替に使用)
+};
+let nextPlayerId = 1;
+let screen = 'settings';
+let navStack = []; // 「戻る」ボタン用の画面履歴
+
+function goTo(newScreen){
+  navStack.push(screen);
+  screen = newScreen;
+}
+function goToRoot(newScreen){
+  navStack = [];
+  screen = newScreen;
+}
+function goBack(){
+  if(navStack.length === 0) return;
+  screen = navStack.pop();
+  render();
+}
+
+function activePlayers(){ return state.savedPlayers.filter(p => state.activePlayerIds.includes(p.id)); }
+function totalRounds(){ return state.settings.setCount * state.settings.roundsPerSet; }
+function completedRounds(){ return state.history.length; }
+function isGameFinished(){ return completedRounds() >= totalRounds(); }
+function progressText(){ return state.currentSet + 'セット目　' + state.currentRound + '回戦'; }
+function scratchProgress(){
+  const done = state.scratchOnlyHistory.filter(h => h.setNumber === state.currentSet).length;
+  return state.currentSet + 'セット目　' + done + '/' + state.settings.roundsPerSet + '枚';
+}
+
+function getTotalScores(){
+  return activePlayers().map(p => {
+    const total = state.history.reduce((sum, round) =>
+      sum + round.results.filter(r => r.playerName === p.name).reduce((s,r) => s + r.score, 0), 0);
+    return [p.name, total];
+  }).sort((a,b) => b[1] - a[1]);
+}
+function getScratchStats(){
+  const stats = {};
+  state.scratchOnlyHistory.forEach(h => {
+    h.winnerNumbers.forEach((num, i) => {
+      const odds = h.oddsValues[i] || 0;
+      stats[num] = (stats[num] || 0) + odds;
+    });
+  });
+  return stats;
+}
+function getScratchWinCounts(){
+  const counts = {};
+  state.scratchOnlyHistory.forEach(h => {
+    h.winnerNumbers.forEach(num => {
+      counts[num] = (counts[num] || 0) + 1;
+    });
+  });
+  return counts;
+}
+// 番号ごとの当選記録に紐づけたエントリーメンバー別の獲得配当統計
+function getScratchPlayerStats(){
+  const stats = {}; // name -> {payout, wins}
+  state.scratchOnlyHistory.forEach(h => {
+    const assign = h.winnerAssignments || {};
+    h.winnerNumbers.forEach((num, i) => {
+      const name = assign[num];
+      if(!name) return;
+      const odds = h.oddsValues[i] || 0;
+      if(!stats[name]) stats[name] = { payout:0, wins:0 };
+      stats[name].payout += odds;
+      stats[name].wins += 1;
+    });
+  });
+  return stats;
+}
+
+/* ---------- actions ---------- */
+function addPlayerName(name){
+  name = name.trim();
+  if(!name) return;
+  state.savedPlayers.push({ id: nextPlayerId++, name });
+}
+function removePlayerName(id){
+  state.savedPlayers = state.savedPlayers.filter(p => p.id !== id);
+  state.activePlayerIds = state.activePlayerIds.filter(pid => pid !== id);
+}
+function toggleActivePlayer(id){
+  if(state.activePlayerIds.includes(id)) state.activePlayerIds = state.activePlayerIds.filter(pid => pid !== id);
+  else state.activePlayerIds.push(id);
+}
+function assignNumberToPlayer(playerId, playerName, number){
+  const allowDup = state.settings.allowDuplicateNumbers;
+  let base = allowDup ? state.assignments : state.assignments.filter(a => a.number !== number);
+  const already = base.some(a => a.playerId === playerId && a.number === number);
+  if(!already) base = base.concat([{ playerId, playerName, number }]);
+  state.assignments = base;
+}
+function unassignNumber(number){ state.assignments = state.assignments.filter(a => a.number !== number); }
+function assignRandom(){ state.assignments = randomAssign(activePlayers(), state.settings.playerCount, state.settings.allowDuplicateNumbers); }
+function startRound(){ state.currentCard = generateRaceCard(state.settings); }
+function redoCurrentRound(){ state.currentCard = generateRaceCard(state.settings); }
+function scratchCellById(cellId){
+  if(!state.currentCard) return;
+  state.currentCard.cells = state.currentCard.cells.map(c => c.id === cellId && !c.isScratched ? {...c, isScratched:true} : c);
+}
+function revealAllWinnerCells(){ if(!state.currentCard) return; state.currentCard.cells = state.currentCard.cells.map(c => c.isWinner ? {...c, isScratched:true} : c); }
+function revealAllOddsCells(){ if(!state.currentCard) return; state.currentCard.cells = state.currentCard.cells.map(c => !c.isWinner ? {...c, isScratched:true} : c); }
+function revealAllCells(){ if(!state.currentCard) return; state.currentCard.cells = state.currentCard.cells.map(c => ({...c, isScratched:true})); }
+
+function completeRound(){
+  const card = state.currentCard; if(!card) return;
+  const results = calcResults(state.assignments, card, state.settings.betPoints);
+  const wNums = winnerCells(card).map(c => parseInt(c.hiddenValue, 10));
+  const oddsMap = {};
+  winnerCells(card).forEach(wc => {
+    const num = parseInt(wc.hiddenValue, 10);
+    const oc = oddsCells(card).find(c => c.rowIndex === wc.rowIndex);
+    const str = oc ? oc.hiddenValue : '0';
+    oddsMap[num] = str === '0' ? 0 : parseInt(str.split('/')[0], 10);
+  });
+  state.history.push({ setNumber: state.currentSet, roundNumber: state.currentRound, winnerNumbers: wNums, oddsMap, denominator: state.settings.playerCount, results });
+  const nextRound = state.currentRound + 1;
+  if(nextRound > state.settings.roundsPerSet){ state.currentSet += 1; state.currentRound = 1; }
+  else state.currentRound = nextRound;
+  state.currentCard = null;
+  state.assignments = [];
+}
+function completeScratchOnly(){
+  const card = state.currentCard; if(!card) return;
+  const wNums = winnerCells(card).map(c => parseInt(c.hiddenValue, 10));
+  const oddsValues = oddsCells(card).map(c => c.hiddenValue === '0' ? 0 : parseInt(c.hiddenValue.split('/')[0], 10));
+  const currentCount = state.scratchOnlyHistory.filter(h => h.setNumber === state.currentSet).length + 1;
+  state.scratchOnlyHistory.push({ setNumber: state.currentSet, scratchNumber: currentCount, winnerNumbers: wNums, oddsValues, denominator: state.settings.playerCount, winnerAssignments: {} });
+  if(currentCount >= state.settings.roundsPerSet) state.currentSet += 1;
+  state.currentCard = null;
+}
+// スクラッチ削り終わり後、当選ナンバーに対して名前ボタンでエントリーメンバーを記録する
+function setScratchWinnerAssignment(historyIndex, number, playerName){
+  const entry = state.scratchOnlyHistory[historyIndex];
+  if(!entry) return;
+  if(!entry.winnerAssignments) entry.winnerAssignments = {};
+  if(playerName) entry.winnerAssignments[number] = playerName;
+  else delete entry.winnerAssignments[number];
+}
+function toggleSound(){ state.settings.soundEnabled = !state.settings.soundEnabled; }
+function setNumberColor(num, hex){ state.numberColors[num] = hex; }
+function resetNumberColor(num){ delete state.numberColors[num]; }
+function resetAll(){
+  const saved = state.savedPlayers, colors = state.numberColors, allowDup = state.settings.allowDuplicateNumbers, oddsMode = state.settings.oddsDisplayMode, scratchSel = state.settings.scratchMemberSelect;
+  state = {
+    settings: { mode:'FULL', playerCount:8, winnerCount:3, setCount:10, roundsPerSet:30, betPoints:1, soundEnabled:true, minGuaranteeProbability:80, jackpotProbability:5, allowDuplicateNumbers: allowDup, oddsDisplayMode: oddsMode, scratchMemberSelect: scratchSel },
+    savedPlayers: saved, activePlayerIds: [], assignments: [], currentSet:1, currentRound:1, currentCard:null,
+    history: [], scratchOnlyHistory: [], numberColors: colors, isInProgress: false
+  };
+}
+
+/* ---------- render helpers ---------- */
 const app = document.getElementById('app');
-
+function el(html){ const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
 function h(tag, attrs, children){
-  const e = document.createElement(tag);
-  if(attrs) for(const k in attrs){
-    if(k === 'class') e.className = attrs[k];
-    else if(k.startsWith('on')) e.addEventListener(k.slice(2), attrs[k]);
-    else if(k === 'style') e.style.cssText = attrs[k];
-    else e.setAttribute(k, attrs[k]);
-  }
-  (children||[]).forEach(c => { if(c) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
-  return e;
+  const e = document.createElement(tag);
+  if(attrs) for(const k in attrs){
+    if(k === 'class') e.className = attrs[k];
+    else if(k.startsWith('on')) e.addEventListener(k.slice(2), attrs[k]);
+    else if(k === 'html') e.innerHTML = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  (children||[]).forEach(c => { if(c) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+  return e;
+}
+function headerStamp(){
+  return h('div', {class:'header-wrap'}, [
+    h('div', {class:'header-title serif'}, ['WINNERS & PAYOUT']),
+    h('hr', {class:'header-divider'})
+  ]);
+}
+function settingRow(label, value, min, max, unit, onMinus, onPlus, disabled){
+  const row = h('div', {class:'setting-row' + (disabled?' row-disabled':''), style: disabled ? 'opacity:0.45;' : ''});
+  row.appendChild(h('div', {class:'setting-label'}, [label]));
+  const stepper = h('div', {class:'stepper'});
+  const minusBtn = h('button', { onclick:()=>{ if(disabled) return; onMinus(); render(); } }, ['－']);
+  if(disabled || value<=min) minusBtn.disabled = true;
+  const plusBtn = h('button', { onclick:()=>{ if(disabled) return; onPlus(); render(); } }, ['＋']);
+  if(disabled || value>=max) plusBtn.disabled = true;
+  stepper.appendChild(minusBtn);
+  stepper.appendChild(h('div', {class:'val'}, [value + ' ' + unit]));
+  stepper.appendChild(plusBtn);
+  row.appendChild(stepper);
+  return row;
+}
+function toggleRow(label, sub, checked, onChange, disabled){
+  const row = h('div', {class:'toggle-row', style: disabled ? 'opacity:0.45;' : ''});
+  const left = h('div', {}, [h('div', {class:'setting-label'}, [label])]);
+  if(sub) left.appendChild(h('div', {class:'sub'}, [sub]));
+  row.appendChild(left);
+  const right = h('div', {style:'display:flex;align-items:center;'});
+  const labelSpan = h('span', {class:'switch-label', style: checked ? 'color:#8B1A1A' : 'color:#888'}, [checked ? 'ON' : 'OFF']);
+  right.appendChild(labelSpan);
+  const sw = h('label', {class:'switch'});
+  const input = h('input', {type:'checkbox'});
+  input.checked = checked;
+  input.disabled = !!disabled;
+  input.addEventListener('change', () => { if(disabled) return; onChange(input.checked); render(); });
+  sw.appendChild(input);
+  sw.appendChild(h('span', {class:'track'}));
+  right.appendChild(sw);
+  row.appendChild(right);
+  return row;
+}
+function resultRow(col1, col2, col3, col4, opts){
+  opts = opts || {};
+  const row = h('div', {class:'result-row' + (opts.header ? ' header':'') + (opts.highlight ? ' highlight':'')});
+  const c1 = h('div', {class:'r-col1' + (opts.highlight?' r-highlight':'')});
+  if(opts.dotColor){ c1.appendChild(h('span', {class:'dot', style:'background:'+opts.dotColor})); c1.appendChild(document.createTextNode(' ')); }
+  c1.appendChild(document.createTextNode(col1));
+  row.appendChild(c1);
+  row.appendChild(h('div', {class:'r-col2'+(opts.highlight?' r-highlight':'')}, [col2]));
+  row.appendChild(h('div', {class:'r-col3'+(opts.highlight?' r-highlight':'')}, [col3]));
+  row.appendChild(h('div', {class:'r-col4'+(opts.highlight?' r-highlight':'')}, [col4]));
+  return row;
+}
+function showModal(title, message, confirmLabel, onConfirm){
+  const backdrop = h('div', {class:'modal-backdrop'});
+  const box = h('div', {class:'modal-box'});
+  box.appendChild(h('h4', {}, [title]));
+  box.appendChild(h('p', {}, [message]));
+  const actions = h('div', {class:'modal-actions'});
+  actions.appendChild(h('button', {style:'color:#8B1A1A', onclick:()=>{ onConfirm(); backdrop.remove(); render(); }}, [confirmLabel]));
+  actions.appendChild(h('button', {style:'color:#1A1008', onclick:()=>backdrop.remove()}, ['キャンセル']));
+  box.appendChild(actions);
+  backdrop.appendChild(box);
+  document.body.appendChild(backdrop);
 }
 
-function setupCanvas(canvas){
-  const ctx = canvas.getContext('2d');
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width || 180;
-  canvas.height = rect.height || 50;
+/* ---------- scratch cell (canvas scratch effect) ---------- */
+function buildScratchCell(cell){
+  const wrap = h('div', {class:'scratch-cell'});
+  const displayText = cell.isWinner ? cell.hiddenValue : displayOddsCellValue(cell.hiddenValue);
+  const isSmallText = displayText.includes('/');
+  wrap.appendChild(h('div', {class:'value' + (isSmallText?' small':'')}, [displayText]));
+  if(cell.isScratched) return wrap;
 
-  ctx.fillStyle = '#A0988E';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#6E665C';
-  ctx.font = 'bold 12px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('SCRATCH', canvas.width / 2, canvas.height / 2);
+  const canvas = document.createElement('canvas');
+  wrap.appendChild(canvas);
 
-  let isDrawing = false;
-  function scratch(e){
-    if(!isDrawing) return;
-    const r = canvas.getBoundingClientRect();
-    const touch = e.touches ? e.touches[0] : e;
-    const x = touch.clientX - r.left;
-    const y = touch.clientY - r.top;
+  let ctx, revealed = false, points = 0, dragging = false, clickCount = 0, clickTimer = null;
 
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.beginPath();
-    ctx.arc(x, y, 14, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  function setupCanvas(){
+    const rect = wrap.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.round(rect.width));
+    canvas.height = Math.max(1, Math.round(rect.height));
+    ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#9E9E9E';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  requestAnimationFrame(setupCanvas);
 
-  canvas.addEventListener('mousedown', (e) => { isDrawing = true; scratch(e); });
-  canvas.addEventListener('mousemove', scratch);
-  window.addEventListener('mouseup', () => { isDrawing = false; });
-
-  canvas.addEventListener('touchstart', (e) => { isDrawing = true; scratch(e); }, {passive:true});
-  canvas.addEventListener('touchmove', scratch, {passive:true});
-  canvas.addEventListener('touchend', () => { isDrawing = false; });
+  function reveal(){
+    if(revealed) return;
+    revealed = true;
+    canvas.style.transition = 'opacity .18s ease';
+    canvas.style.opacity = '0';
+    setTimeout(() => canvas.remove(), 180);
+    scratchCellById(cell.id);
+    checkAllScratchedAndUpdateFooter();
+  }
+  function scratchAt(x, y){
+    if(!ctx) return;
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.arc(x, y, 13, 0, Math.PI*2);
+    ctx.fill();
+    points++;
+    if(points > 16) reveal();
+  }
+  function getPos(e){
+    const rect = canvas.getBoundingClientRect();
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    return [cx, cy];
+  }
+  canvas.addEventListener('pointerdown', (e) => {
+    if(revealed) return;
+    dragging = true;
+    const [x,y] = getPos(e);
+    scratchAt(x, y);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if(revealed || !dragging) return;
+    const [x,y] = getPos(e);
+    scratchAt(x, y);
+  });
+  window.addEventListener('pointerup', () => {
+    if(!dragging) return;
+    dragging = false;
+    if(points <= 1){
+      clickCount++;
+      if(clickTimer) clearTimeout(clickTimer);
+      if(clickCount >= 2) reveal();
+      else clickTimer = setTimeout(() => { clickCount = 0; }, 500);
+    }
+  });
+  return wrap;
 }
-
-function renderSettingsScreen(){
-  const wrap = h('div', {class:'screen'});
-  wrap.appendChild(h('div', {class:'header-wrap'}, [
-    h('div', {class:'header-title serif'}, ['WINNERS & PAYOUT']),
-    h('hr', {class:'header-divider'})
-  ]));
-  
-  wrap.appendChild(h('div', {class:'screen-title'}, ['基本設定']));
-  wrap.appendChild(h('hr', {class:'thin-divider'}));
-
-  // 参加人数
-  wrap.appendChild(h('div', {class:'setting-row'}, [
-    h('span', {class:'setting-label'}, ['参加人数']),
-    h('div', {class:'stepper'}, [
-      h('button', {onclick: () => { if(state.playerCount > 2){ state.playerCount--; render(); } }}, ['-']),
-      h('span', {class:'val'}, [state.playerCount + ' 人']),
-      h('button', {onclick: () => { if(state.playerCount < 24){ state.playerCount++; render(); } }}, ['+'])
-    ])
-  ]));
-
-  // 的中枠数
-  wrap.appendChild(h('div', {class:'setting-row'}, [
-    h('span', {class:'setting-label'}, ['的中枠数']),
-    h('div', {class:'stepper'}, [
-      h('button', {onclick: () => { if(state.winnerCount > 1){ state.winnerCount--; render(); } }}, ['-']),
-      h('span', {class:'val'}, [state.winnerCount + ' 枠']),
-      h('button', {onclick: () => { if(state.winnerCount < state.playerCount){ state.winnerCount++; render(); } }}, ['+'])
-    ])
-  ]));
-
-  // 開始ボタン
-  wrap.appendChild(h('button', {
-    class: 'btn btn-red',
-    style: 'margin-top: 24px;',
-    onclick: () => {
-      state.card = generateCard(state.playerCount, state.winnerCount);
-      state.screen = 'game';
-      render();
-    }
-  }, ['ゲームを開始する']));
-
-  return wrap;
-}
-
-function renderGameScreen(){
-  const wrap = h('div', {class:'screen'});
-  wrap.appendChild(h('div', {class:'header-wrap'}, [
-    h('div', {class:'header-title serif'}, ['スクラッチ']),
-    h('hr', {class:'header-divider'})
-  ]));
-
-  const cols = h('div', {class:'race-columns'});
-
-  // 的中馬番列
-  const winCol = h('div', {class:'race-col'}, [h('h3', {}, ['的中馬番'])]);
-  const winCells = h('div', {class:'cells'});
-  state.card.winners.forEach(w => {
-    const cell = h('div', {class:'scratch-cell'}, [
-      h('div', {class:'value'}, [w.value]),
-      h('canvas', {})
-    ]);
-    winCells.appendChild(cell);
-  });
-  winCol.appendChild(winCells);
-
-  // 倍率列
-  const oddsCol = h('div', {class:'race-col'}, [h('h3', {}, ['倍率'])]);
-  const oddsCells = h('div', {class:'cells'});
-  state.card.odds.forEach(o => {
-    const cell = h('div', {class:'scratch-cell'}, [
-      h('div', {class:'value'}, [o.value + '倍']),
-      h('canvas', {})
-    ]);
-    oddsCells.appendChild(cell);
-  });
-  oddsCol.appendChild(oddsCells);
-
-  cols.appendChild(winCol);
-  cols.appendChild(oddsCol);
-  wrap.appendChild(cols);
-
-  // 設定へ戻るボタン
-  wrap.appendChild(h('button', {
-    class: 'btn btn-ink',
-    style: 'margin-top: 32px;',
-    onclick: () => {
-      state.screen = 'settings';
-      render();
-    }
-  }, ['設定に戻る']));
-
-  return wrap;
-}
-
-function render(){
-  app.innerHTML = '';
-  if(state.screen === 'settings'){
-    app.appendChild(renderSettingsScreen());
-  } else {
-    app.appendChild(renderGameScreen());
-    setTimeout(() => {
-      document.querySelectorAll('canvas').forEach(setupCanvas);
-    }, 50);
-  }
-}
-
-render();
-</script>
-</body>
-</html>
+function checkAllScratchedAndUpdateFooter(){
+  const footer = doc
