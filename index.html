@@ -1363,4 +1363,24 @@ function render(){
   switch(screen){
     case 'settings': node = renderSettings(); break;
     case 'colorSetting': node = renderColorSetting(); break;
-    case 'playerSelect': node
+    case 'playerSelect': node = renderPlayerSelect(); break;
+    case 'assign': node = renderAssign(); break;
+    case 'race': node = renderRace(); break;
+    case 'result': node = renderResult(); break;
+    case 'scratchResult': node = renderScratchResult(); break;
+    default: node = renderSettings();
+  }
+  app.appendChild(node);
+
+  if(navStack.length > 0){
+    app.appendChild(h('button', {class:'back-btn', title:'一つ前の画面へ戻る', onclick: goBack}, ['←']));
+  }
+  if(screen !== 'settings'){
+    app.appendChild(h('button', {class:'settings-btn', title:'設定を確認する（進行状況は保持されます）', onclick: () => { goTo('settings'); render(); }}, ['⚙']));
+  }
+}
+
+render();
+</script>
+</body>
+</html>
