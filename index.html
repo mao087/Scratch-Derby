@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>WINNERS &amp; PAYOUT - KamiKeiba</title>
+<title>WINNERS &amp; PAYOUT</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -168,14 +168,12 @@ function h(tag, attrs, children){
   return e;
 }
 
-// スクラッチキャンバスのセットアップ
 function setupCanvas(canvas){
   const ctx = canvas.getContext('2d');
   const rect = canvas.getBoundingClientRect();
   canvas.width = rect.width || 180;
   canvas.height = rect.height || 50;
 
-  // 削る前のアッシュ色塗料
   ctx.fillStyle = '#A0988E';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#6E665C';
@@ -260,7 +258,7 @@ function renderGameScreen(){
 
   const cols = h('div', {class:'race-columns'});
 
-  // 着順（当たり番）列
+  // 的中馬番列
   const winCol = h('div', {class:'race-col'}, [h('h3', {}, ['的中馬番'])]);
   const winCells = h('div', {class:'cells'});
   state.card.winners.forEach(w => {
@@ -272,7 +270,7 @@ function renderGameScreen(){
   });
   winCol.appendChild(winCells);
 
-  // オッズ列
+  // 倍率列
   const oddsCol = h('div', {class:'race-col'}, [h('h3', {}, ['倍率'])]);
   const oddsCells = h('div', {class:'cells'});
   state.card.odds.forEach(o => {
@@ -307,7 +305,6 @@ function render(){
     app.appendChild(renderSettingsScreen());
   } else {
     app.appendChild(renderGameScreen());
-    // キャンバスの初期化（レンダリング後）
     setTimeout(() => {
       document.querySelectorAll('canvas').forEach(setupCanvas);
     }, 50);
