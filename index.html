@@ -641,9 +641,39 @@ function headerStamp(){
     h('hr', {class:'header-divider'})
   ]);
 }
-// インライン広告枠（コンテンツの流れの中に自然に挿入する用途）。id を指定すると広告SDK側から個別に狙い撃ちできる。
-function adSlotInline(id){
-  return h('div', {class:'ad-inline', id: id || ('ad-inline-' + Math.random().toString(36).slice(2, 8))}, ['AD SPACE 320×50 / 468×60']);
+// ---------- 広告タグ ----------
+// ①②それぞれの広告SDKタグ。admax(shinobi)は document.write でタグ設置箇所に広告を書き込む方式のため、
+// render() の度に生成し直す通常のDOM要素にそのまま差し込むと、2回目以降の document.write が
+// ページ全体を上書きしてしまう恐れがある。そのため各広告は専用の iframe(srcdoc) の中で読み込ませ、
+// 影響範囲をその iframe 内だけに閉じ込めている。
+const AD_TAGS = {
+  1: '<script src="https://adm.shinobi.jp/s/137acba0b0cf27a8a6573a7df4614737"><\/script>',
+  2: '<script src="https://adm.shinobi.jp/s/35ba5b784d4304fdb8fde9defc543fcb"><\/script>'
+};
+function adIframeSrcdoc(variant){
+  return '<!doctype html><html><head><meta charset="utf-8">'
+    + '<style>html,body{margin:0;padding:0;background:transparent;overflow:hidden;}</style>'
+    + '</head><body>' + (AD_TAGS[variant] || '') + '</body></html>';
+}
+// 広告枠1つ分の iframe を新規生成する。render() が画面を丸ごと作り直すたびにこの関数が
+// 再度呼ばれて新しい iframe に差し替わるため、結果的に「画面（ページ）が切り替わるたびに
+// 広告が更新される」動作になる。
+function buildAdFrame(variant){
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('scrolling', 'no');
+  iframe.setAttribute('frameborder', '0');
+  iframe.setAttribute('title', 'advertisement');
+  iframe.style.cssText = 'width:100%;height:100%;border:0;display:block;background:transparent;';
+  iframe.srcdoc = adIframeSrcdoc(variant);
+  return iframe;
+}
+// インライン広告枠（コンテンツの流れの中に自然に挿入する用途）。variant で①/②のどちらのタグを使うか指定する。
+function adSlotInline(id, variant){
+  const box = h('div', {class:'ad-inline', id: id || ('ad-inline-' + Math.random().toString(36).slice(2, 8))});
+  box.style.padding = '0';
+  box.style.height = 'var(--ad-h)';
+  box.appendChild(buildAdFrame(variant || 1));
+  return box;
 }
 function settingRow(label, value, min, max, unit, onMinus, onPlus, disabled){
   const row = h('div', {class:'setting-row' + (disabled?' row-disabled':''), style: disabled ? 'opacity:0.45;' : ''});
@@ -1245,7 +1275,7 @@ function renderResult(){
   }
 
   c.appendChild(h('div', {style:'height:20px;'}));
-  c.appendChild(adSlotInline('ad-inline-result'));
+  c.appendChild(adSlotInline('ad-inline-result', 1));
   if(isGameFinished()){
     c.appendChild(h('div', {class:'finish-text serif'}, ['全回戦終了！']));
     c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { resetAll(); goToRoot('settings'); render(); }}, ['最初から']));
@@ -1378,7 +1408,7 @@ function renderScratchResult(){
   }
 
   c.appendChild(h('div', {style:'height:20px;'}));
-  c.appendChild(adSlotInline('ad-inline-scratch-result'));
+  c.appendChild(adSlotInline('ad-inline-scratch-result', 2));
   if(isSetComplete && state.currentSet > state.settings.setCount){
     c.appendChild(h('div', {class:'finish-text serif'}, ['全セット終了！']));
     c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { resetAll(); goToRoot('settings'); render(); }}, ['最初から']));
@@ -1390,7 +1420,9 @@ function renderScratchResult(){
 
 /* ---------- root render ---------- */
 function adOverlay(pos){
-  return h('div', {class:'ad-overlay ' + pos, id:'ad-' + pos + '-overlay'}, ['AD SPACE 320×50 / 468×60']);
+  const box = h('div', {class:'ad-overlay ' + pos, id:'ad-' + pos + '-overlay'});
+  box.appendChild(buildAdFrame(pos === 'top' ? 1 : 2));
+  return box;
 }
 function render(){
   app.innerHTML = '';
