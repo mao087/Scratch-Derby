@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>WINNERS &amp; PAYOUT - Raffle pot Scratch</title>
+<title>WINNERS &amp; PAYOUT - Raffle potScratch</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -16,6 +16,7 @@
     --green:#2D5A1B;
     --brown:#4A3828;
     --gray:#8a8a8a;
+    --ad-h:60px; /* 予約する広告バナー高さ（320×50 / 468×60 の両方に対応できる最大値） */
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;height:100%;}
@@ -29,34 +30,25 @@
       repeating-linear-gradient(0deg, rgba(26,16,8,0.015) 0px, rgba(26,16,8,0.015) 1px, transparent 1px, transparent 3px);
     min-height:100%;
     display:flex;
-    flex-direction:column;
-    align-items:center;
+    justify-content:center;
   }
   .serif{font-family:'Shippori Mincho', serif;}
   #app{
     width:100%;
     max-width:480px;
     min-height:100vh;
+    min-height:100dvh; /* モバイルのアドレスバー等による表示崩れ対策（動的ビューポート高さ） */
     position:relative;
     background:var(--cream);
     box-shadow:0 0 40px rgba(0,0,0,0.08);
+    display:flex;
+    flex-direction:column;
   }
   .screen{
     padding:20px 20px 32px;
     animation:fadeIn .25s ease;
-  }
-
-  /* ---------- ad banner (静的・JS再描画の影響を受けない) ---------- */
-  .ad-banner{
-    width:100%;
-    max-width:480px;
-    box-sizing:border-box;
-    padding:10px 12px 12px;
-    text-align:center;
-  }
-  .ad-banner img{
-    max-width:100%;
-    height:auto;
+    flex:1 1 auto; /* #appのflexレイアウト内でコンテンツ領域を伸縮させる（広告を確実に最下部へ固定するため） */
+    min-width:0;
   }
   @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
 
@@ -266,7 +258,7 @@
   /* ---------- back (return) button ---------- */
   .back-btn{
     position:fixed;
-    bottom:16px;
+    bottom:calc(var(--ad-h) + 16px);
     left:max(12px, calc(50% - 240px + 12px));
     width:44px; height:44px; border-radius:50%;
     background:rgba(26,16,8,0.85); color:#F5F0E8; border:none;
@@ -279,7 +271,7 @@
   /* ---------- settings shortcut button ---------- */
   .settings-btn{
     position:fixed;
-    bottom:16px;
+    bottom:calc(var(--ad-h) + 16px);
     right:max(12px, calc(50% - 240px + 12px));
     width:44px; height:44px; border-radius:50%;
     background:rgba(139,26,26,0.88); color:#F5F0E8; border:none;
@@ -288,15 +280,39 @@
     display:flex; align-items:center; justify-content:center;
   }
   .settings-btn:active{ transform:scale(0.92); }
+
+  /* ---------- ad slots ----------
+     オーバーレイ広告：#app のflexレイアウト内で最上部・最下部に配置し、position:stickyで
+     スクロール中も画面端に留まるようにしている（#appの外に固定配置しないため、
+     コンテンツと重なって押せなくなる問題が起きない）。
+     インライン広告　：画面のコンテンツ内に自然に挿入する枠（renderScratchResult等で使用）
+     実際の広告タグ／SDK呼び出しは各 #ad-top-overlay / #ad-bottom-overlay / .ad-inline に差し込んでください。
+     推奨サイズ：バナー 320×50 または 468×60（縦は最大60pxで予約済み） */
+  .ad-overlay{
+    position:sticky;
+    flex:0 0 auto;
+    width:100%;
+    height:var(--ad-h);
+    display:flex; align-items:center; justify-content:center;
+    background:var(--tan);
+    color:var(--gray); font-size:10px; letter-spacing:1px;
+    z-index:70;
+    overflow:hidden;
+  }
+  .ad-overlay.top{ top:0; border-bottom:1px solid rgba(26,16,8,0.15); }
+  .ad-overlay.bottom{ bottom:0; border-top:1px solid rgba(26,16,8,0.15); }
+
+  .ad-inline{
+    width:100%; max-width:468px; min-height:50px;
+    margin:14px auto;
+    display:flex; align-items:center; justify-content:center;
+    border:1px dashed rgba(26,16,8,0.25); border-radius:4px;
+    background:rgba(26,16,8,0.03);
+    color:var(--gray); font-size:10px; letter-spacing:1px;
+  }
 </style>
 </head>
 <body>
-<div class="ad-banner">
-<a href="https://px.a8.net/svt/ejp?a8mat=4BA41A+1823JM+3A98+669JL" rel="nofollow">
-<img border="0" width="468" height="60" alt="" src="https://www26.a8.net/svt/bgt?aid=260812270074&wid=001&eno=01&mid=s00000015326001037000&mc=1"></a>
-<img border="0" width="1" height="1" src="https://www13.a8.net/0.gif?a8mat=4BA41A+1823JM+3A98+669JL" alt="">
-</div>
-
 <div id="app"></div>
 
 <script>
@@ -625,6 +641,10 @@ function headerStamp(){
     h('hr', {class:'header-divider'})
   ]);
 }
+// インライン広告枠（コンテンツの流れの中に自然に挿入する用途）。id を指定すると広告SDK側から個別に狙い撃ちできる。
+function adSlotInline(id){
+  return h('div', {class:'ad-inline', id: id || ('ad-inline-' + Math.random().toString(36).slice(2, 8))}, ['AD SPACE 320×50 / 468×60']);
+}
 function settingRow(label, value, min, max, unit, onMinus, onPlus, disabled){
   const row = h('div', {class:'setting-row' + (disabled?' row-disabled':''), style: disabled ? 'opacity:0.45;' : ''});
   row.appendChild(h('div', {class:'setting-label'}, [label]));
@@ -856,7 +876,7 @@ function renderSettings(){
       goTo('playerSelect');
       render();
     }}, ['🏇 フルモード']));
-    c.appendChild(h('button', {class:'btn btn-brown serif', onclick: () => {
+    c.appendChild(h('button', {class:'btn btn-brown serif', style:'margin-bottom:10px;', onclick: () => {
       s.mode = 'SCRATCH';
       if(s.scratchMemberSelect){
         goTo('playerSelect');
@@ -869,6 +889,7 @@ function renderSettings(){
     }}, ['🎰 スクラッチ専用モード']));
   }
 
+  c.appendChild(h('div', {style:'height:16px;'})); /* 下部広告オーバーレイに被らないための余白 */
   return c;
 }
 
@@ -1119,6 +1140,15 @@ function renderRace(){
   topbar.appendChild(right);
   c.appendChild(topbar);
 
+  if(isScratchMode){
+    const navRow = h('div', {style:'display:flex;gap:8px;margin:10px 0 4px;'});
+    if(navStack.length > 0){
+      navRow.appendChild(h('button', {class:'btn-outline', style:'flex:1;padding:8px;font-size:12px;', onclick: () => { goBack(); }}, ['← 戻る']));
+    }
+    navRow.appendChild(h('button', {class:'btn-outline', style:'flex:1;padding:8px;font-size:12px;', onclick: () => { goTo('settings'); render(); }}, ['⚙ 設定']));
+    c.appendChild(navRow);
+  }
+
   const revealRow = h('div', {class:'reveal-row'});
   revealRow.appendChild(h('button', {class:'btn-small', style:'background:rgba(26,16,8,0.75);color:#F5F0E8;flex:1;', onclick: () => { revealAllWinnerCells(); render(); }}, ['勝者一発']));
   revealRow.appendChild(h('button', {class:'btn-small', style:'background:rgba(139,26,26,0.85);color:#F5F0E8;flex:1;', onclick: () => { revealAllCells(); render(); }}, ['両方一発']));
@@ -1215,6 +1245,7 @@ function renderResult(){
   }
 
   c.appendChild(h('div', {style:'height:20px;'}));
+  c.appendChild(adSlotInline('ad-inline-result'));
   if(isGameFinished()){
     c.appendChild(h('div', {class:'finish-text serif'}, ['全回戦終了！']));
     c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { resetAll(); goToRoot('settings'); render(); }}, ['最初から']));
@@ -1347,6 +1378,7 @@ function renderScratchResult(){
   }
 
   c.appendChild(h('div', {style:'height:20px;'}));
+  c.appendChild(adSlotInline('ad-inline-scratch-result'));
   if(isSetComplete && state.currentSet > state.settings.setCount){
     c.appendChild(h('div', {class:'finish-text serif'}, ['全セット終了！']));
     c.appendChild(h('button', {class:'btn btn-ink serif', onclick: () => { resetAll(); goToRoot('settings'); render(); }}, ['最初から']));
@@ -1357,6 +1389,9 @@ function renderScratchResult(){
 }
 
 /* ---------- root render ---------- */
+function adOverlay(pos){
+  return h('div', {class:'ad-overlay ' + pos, id:'ad-' + pos + '-overlay'}, ['AD SPACE 320×50 / 468×60']);
+}
 function render(){
   app.innerHTML = '';
   let node;
@@ -1370,12 +1405,15 @@ function render(){
     case 'scratchResult': node = renderScratchResult(); break;
     default: node = renderSettings();
   }
+  app.appendChild(adOverlay('top'));
   app.appendChild(node);
+  app.appendChild(adOverlay('bottom'));
 
-  if(navStack.length > 0){
+  const isScratchRaceScreen = (screen === 'race' && state.settings.mode === 'SCRATCH');
+  if(navStack.length > 0 && !isScratchRaceScreen){
     app.appendChild(h('button', {class:'back-btn', title:'一つ前の画面へ戻る', onclick: goBack}, ['←']));
   }
-  if(screen !== 'settings'){
+  if(screen !== 'settings' && !isScratchRaceScreen){
     app.appendChild(h('button', {class:'settings-btn', title:'設定を確認する（進行状況は保持されます）', onclick: () => { goTo('settings'); render(); }}, ['⚙']));
   }
 }
